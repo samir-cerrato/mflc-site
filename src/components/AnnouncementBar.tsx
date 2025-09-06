@@ -18,7 +18,7 @@ export default function AnnouncementBar() {
   const duration = "36s";
 
   return (
-    <div className="bg-white text-black overflow-hidden m-0 p-0 leading-none">
+    <div className="bg-yellow-100 text-black overflow-hidden m-0 p-0 leading-none">
       <div className="wrap">
         <div className="track py-6" style={{ ["--duration" as any]: duration }}>
           <div className="copy">

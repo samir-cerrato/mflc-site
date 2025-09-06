@@ -1,3 +1,5 @@
+//this is the yellow nav bar on the top of the page
+
 "use client";
 
 import Image from "next/image";
@@ -42,7 +44,7 @@ export default function Navbar() {
         </Link>
 
         {/* Right: Desktop Nav */}
-        <nav className="hidden items-center gap-10 text-lg md:flex">
+        <nav className="hidden items-center gap-10 text-2xl md:flex">
           <Link href="/" className="hover:underline">
             Inicio
           </Link>
