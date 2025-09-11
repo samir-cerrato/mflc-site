@@ -151,9 +151,16 @@ export async function GET() {
         },
       }
     );
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const detail =
+      err instanceof Error
+        ? err.message
+        : typeof err === "string"
+        ? err
+        : undefined;
+
     return NextResponse.json(
-      { error: "Failed to load verse", detail: err?.message ?? String(err) },
+      { error: "Failed to load verse", ...(detail ? { detail } : {}) },
       { status: 500 }
     );
   }
