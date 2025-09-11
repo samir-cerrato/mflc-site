@@ -1,4 +1,5 @@
-//this is covering the verse of the day, which sits to the right of the events panel
+// src/components/VerseOfTheDay.tsx
+// covers the verse of the day, which sits to the right of the events panel
 
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -29,6 +30,7 @@ function msUntilNextMidnightNY() {
     now.getDate() + 1,
     0,
     0,
+    0,
     0
   );
   return Math.max(1, next.getTime() - now.getTime());
@@ -51,17 +53,23 @@ export default function VerseOfTheDay() {
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Daily image index (auto-rotates at midnight)
-  const [imgIndex, setImgIndex] = useState<number>(() => todayImageIndex());
-  const bgUrl = useMemo(() => `/image${imgIndex}.jpeg`, [imgIndex]);
+  // HYDRATION-SAFE: choose image only after mount (avoid SSR/client mismatch)
+  const [imgIndex, setImgIndex] = useState<number | null>(null);
+  useEffect(() => {
+    setImgIndex(todayImageIndex());
+  }, []);
+  const bgUrl = useMemo(
+    () => (imgIndex ? `/image${imgIndex}.jpeg` : null),
+    [imgIndex]
+  );
 
-  // Hydration-safe base URL (same approach as InfoPanel)
+  // Hydration-safe base URL (for share links)
   const [baseUrl, setBaseUrl] = useState("");
   useEffect(() => {
     setBaseUrl(window.location.origin);
   }, []);
   const shareUrl = useMemo(
-    () => (baseUrl ? `${baseUrl}${bgUrl}` : ""),
+    () => (baseUrl && bgUrl ? `${baseUrl}${bgUrl}` : ""),
     [baseUrl, bgUrl]
   );
 
@@ -86,6 +94,7 @@ export default function VerseOfTheDay() {
 
   // Flip at midnight ET (keeps verse & image in sync daily)
   useEffect(() => {
+    if (imgIndex == null) return; // start timers only after first image is set
     const ms = msUntilNextMidnightNY();
     const timer = setTimeout(() => {
       setImgIndex(todayImageIndex());
@@ -101,7 +110,7 @@ export default function VerseOfTheDay() {
       if ((window as any).__votdInterval)
         clearInterval((window as any).__votdInterval);
     };
-  }, []);
+  }, [imgIndex]);
 
   /* ---------- Download: capture WHOLE panel (bg + title + verse), exclude share row ---------- */
   const captureRef = useRef<HTMLElement | null>(null);
@@ -128,7 +137,6 @@ export default function VerseOfTheDay() {
           !(n instanceof HTMLElement && n.dataset?.excludeCapture === "true"),
       });
 
-      // Build a File for native share
       const res = await fetch(dataUrl);
       const blob = await res.blob();
       const now = nyNow();
@@ -137,8 +145,8 @@ export default function VerseOfTheDay() {
       ).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}.png`;
       const file = new File([blob], fileName, { type: "image/png" });
 
-      // Prefer native share (mobile → Save Image to Photos)
-      // @ts-ignore (older TS libs)
+      // Prefer native share (mobile)
+      // @ts-ignore
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({
           files: [file],
@@ -155,18 +163,15 @@ export default function VerseOfTheDay() {
       document.body.appendChild(a);
       a.click();
       a.remove();
-      // iOS Safari: open new tab so user can long-press → Save Image
       if (/iP(ad|hone|od)/.test(navigator.userAgent))
         window.open(dataUrl, "_blank");
     } catch (err: any) {
-      // User canceled share → ignore
-      if (err?.name === "AbortError") return;
-      // A previous share still active → ignore
-      if (err?.name === "InvalidStateError") return;
+      if (err?.name === "AbortError" || err?.name === "InvalidStateError")
+        return;
       console.error("share/download failed:", err);
       alert("No se pudo compartir/descargar la imagen.");
     } finally {
-      setTimeout(() => setIsSharing(false), 200); // tiny delay to avoid immediate re-tap
+      setTimeout(() => setIsSharing(false), 200);
     }
   }
 
@@ -193,10 +198,12 @@ export default function VerseOfTheDay() {
       ref={captureRef}
       className="relative rounded-2xl overflow-hidden border shadow-sm h-full"
     >
-      {/* Background covers ENTIRE panel */}
+      {/* Background covers ENTIRE panel — style applied ONLY when bgUrl exists to avoid hydration mismatch */}
       <div
         className="absolute inset-0 bg-center bg-cover"
-        style={{ backgroundImage: `url(${bgUrl})` }}
+        style={bgUrl ? { backgroundImage: `url(${bgUrl})` } : undefined}
+        // safety valve to silence warnings if some extension mutates DOM before hydration
+        suppressHydrationWarning
       />
       <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/45 to-black/70" />
 
@@ -204,10 +211,7 @@ export default function VerseOfTheDay() {
       <div className="relative z-[1] flex h-full flex-col">
         {/* Title */}
         <div className="pt-4 md:pt-6 px-4">
-          <h2
-            className="text-center font-extrabold underline underline-offset-8 text-white
-                         text-3xl md:text-5xl lg:text-6xl tracking-tight"
-          >
+          <h2 className="text-center font-extrabold underline underline-offset-8 text-white text-3xl md:text-5xl lg:text-6xl tracking-tight">
             Versículo del día
           </h2>
         </div>
@@ -220,7 +224,6 @@ export default function VerseOfTheDay() {
               {err && <p className="text-center text-red-200">{err}</p>}
               {data && (
                 <>
-                  {/* Larger verse text */}
                   <p className="whitespace-pre-line leading-relaxed text-2xl md:text-3xl lg:text-4xl">
                     {data.text}
                   </p>
@@ -242,7 +245,7 @@ export default function VerseOfTheDay() {
         <div className="px-4 pb-4 md:px-6 md:pb-6" data-exclude-capture="true">
           <p className="text-sm text-neutral-200 text-center">Comparte ahora</p>
 
-          {shareUrl ? (
+          {imgIndex && shareUrl ? (
             <div className="mt-2 flex items-center justify-center gap-4">
               {/* Facebook */}
               <a

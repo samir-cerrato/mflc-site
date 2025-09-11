@@ -1,5 +1,4 @@
-//this is the yellow nav bar on the top of the page
-
+// src/components/Navbar.tsx
 "use client";
 
 import Image from "next/image";
@@ -7,17 +6,24 @@ import Link from "next/link";
 import { Menu, ChevronDown, ExternalLink } from "lucide-react";
 import { useState } from "react";
 
+// ✅ Put your real profiles here
+// - Facebook pages look like: https://facebook.com/TU_PAGINA
+// - Instagram users look like: https://instagram.com/TU_USUARIO
+// - YouTube channel handle: https://youtube.com/@TU_CANAL  (or /channel/ID)
 const SOCIAL_LINKS = [
-  { href: "https://facebook.com/", label: "Facebook" },
-  { href: "https://instagram.com/", label: "Instagram" },
-  { href: "https://youtube.com/", label: "YouTube" },
+  {
+    href: "https://www.facebook.com/ministeriofamiliarlacosecha",
+    label: "Facebook",
+  },
+  { href: "https://www.instagram.com/lacosechayonkers", label: "Instagram" },
+  { href: "https://www.youtube.com/@MFLCYONKERS", label: "YouTube" },
 ];
 
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-yellow-300 text-black">
+    <header className="w-full border-b bg-yellow-300 text-black">
       {/* Row with left/right padding */}
       <div className="flex w-full items-center justify-between py-3 pl-6 pr-6">
         {/* Left: Logo + Name + Slogan */}
@@ -48,7 +54,8 @@ export default function Navbar() {
           <Link href="/" className="hover:underline">
             Inicio
           </Link>
-          <Link href="/about" className="hover:underline">
+
+          <Link href="/nosotros" className="hover:underline">
             Nosotros
           </Link>
 
@@ -66,7 +73,7 @@ export default function Navbar() {
 
             <ul
               role="menu"
-              className="absolute right-0 top-full z-50 hidden w-44 overflow-hidden rounded-xl border border-yellow-400 bg-yellow-100 shadow-lg group-hover:block group-focus-within:block"
+              className="absolute right-0 top-full z-50 hidden min-w-56 overflow-hidden rounded-xl border border-yellow-400 bg-yellow-100 shadow-lg group-hover:block group-focus-within:block"
             >
               {SOCIAL_LINKS.map((s) => (
                 <li key={s.label} role="none">
@@ -75,10 +82,11 @@ export default function Navbar() {
                     href={s.href}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center justify-between px-3 py-2 text-sm text-black hover:bg-yellow-200"
+                    className="flex items-center justify-between px-4 py-3 text-lg text-black hover:bg-yellow-200"
+                    aria-label={`Abrir ${s.label} en una nueva pestaña`}
                   >
                     {s.label}
-                    <ExternalLink className="h-3.5 w-3.5" />
+                    <ExternalLink className="h-5 w-5 shrink-0" />
                   </a>
                 </li>
               ))}
@@ -103,7 +111,7 @@ export default function Navbar() {
         </button>
       </div>
 
-      {/* Mobile dropdown panel (lighter background) */}
+      {/* Mobile dropdown panel */}
       {mobileOpen && (
         <div className="border-t border-yellow-400 bg-yellow-100 md:hidden">
           <ul className="space-y-2 py-3">
@@ -118,7 +126,7 @@ export default function Navbar() {
             </li>
             <li>
               <Link
-                href="/about"
+                href="/nosotros"
                 className="block px-3 py-2 hover:bg-yellow-200"
                 onClick={() => setMobileOpen(false)}
               >
@@ -129,7 +137,7 @@ export default function Navbar() {
             {/* Redes Sociales on mobile */}
             <li>
               <details className="group">
-                <summary className="flex cursor-pointer list-none items-center justify-between px-3 py-2 hover:bg-yellow-200">
+                <summary className="flex cursor-pointer list-none items-center justify-between px-3 py-2 text-base hover:bg-yellow-200">
                   <span>Redes Sociales</span>
                   <ChevronDown className="h-4 w-4 transition group-open:rotate-180" />
                 </summary>
@@ -140,8 +148,9 @@ export default function Navbar() {
                         href={s.href}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="block px-3 py-2 text-sm hover:bg-yellow-200"
+                        className="block px-4 py-2 text-base hover:bg-yellow-200"
                         onClick={() => setMobileOpen(false)}
+                        aria-label={`Abrir ${s.label} en una nueva pestaña`}
                       >
                         {s.label}
                       </a>

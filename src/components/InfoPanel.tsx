@@ -1,3 +1,4 @@
+// src/components/InfoPanel.tsx
 // this is for the panels below the image. the left one is for events and the right one is for the verse of the day
 
 "use client";
@@ -84,6 +85,20 @@ const MONTHS_ES = [
   "noviembre",
   "diciembre",
 ];
+const MONTHS_ES_SHORT = [
+  "ene",
+  "feb",
+  "mar",
+  "abr",
+  "may",
+  "jun",
+  "jul",
+  "ago",
+  "sept",
+  "oct",
+  "nov",
+  "dic",
+];
 const WEEKDAY_ES_SHORT = ["dom", "lun", "mar", "mié", "jue", "vie", "sáb"];
 
 function pad(n: number) {
@@ -128,6 +143,15 @@ function weekdayIndex(y: number, m: number, d: number) {
       5 * J) %
     7;
   return (h + 6) % 7;
+}
+
+/* Pretty 12-hour time like 7:30pm */
+function formatTime12h(date: Date) {
+  const h24 = date.getHours();
+  const h12 = h24 % 12 || 12;
+  const mm = String(date.getMinutes()).padStart(2, "0");
+  const ampm = h24 >= 12 ? "pm" : "am";
+  return `${h12}:${mm}${ampm}`;
 }
 
 /* ======================================================================
@@ -192,109 +216,146 @@ function downloadICS(meta: FeaturedMeta) {
 
 /* ======================================================================
    UPCOMING (AUTO): always next TWO from your rules
-   - Tue 7:30 PM (Estudio Bíblico)
-   - Fri 7:30 PM (Servicio de Viernes)
-   - Sat 9:00 AM (Oración Matutina)
-   - Sat 7:00 PM (Servicio de Sábado)
-   - Sun 2:30 PM (Servicio Dominical)
-   - Last Fri of month 11:00 PM (Vigilia)
-   - Last Sat of month 7:00 PM (Cena del Señor)
-   ⚠️ Auto-rotates (recomputes) every minute.
-   ✅ Includes a commented-out hook to add a one-off special event.
+   ✅ Today counts all day; rollover at midnight ET
 ====================================================================== */
 type SimpleUpcoming = { id: string; when: Date; title: string };
 
-function nextWeekday(from: Date, weekday: number) {
-  const d = new Date(from);
-  const delta = (weekday - d.getDay() + 7) % 7 || 7; // strictly next
-  d.setDate(d.getDate() + delta);
+// New York “today 00:00:00” anchor
+function nyTodayStart(): Date {
+  const fmt = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/New_York",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+  const [y, m, d] = fmt.format(new Date()).split("-").map(Number);
+  return new Date(y, m - 1, d, 0, 0, 0, 0);
+}
+
+// Weekday ON OR AFTER the anchor (includes today)
+function weekdayOnOrAfter(anchor: Date, weekday: number): Date {
+  const a = new Date(
+    anchor.getFullYear(),
+    anchor.getMonth(),
+    anchor.getDate(),
+    0,
+    0,
+    0,
+    0
+  );
+  const delta = (weekday - a.getDay() + 7) % 7; // 0..6
+  const d = new Date(a);
+  d.setDate(a.getDate() + delta);
   return d;
 }
+
+// Set time on a date
+function atTime(base: Date, hh: number, mm: number): Date {
+  const d = new Date(base);
+  d.setHours(hh, mm, 0, 0);
+  return d;
+}
+
+// Last weekday of month
 function lastWeekdayOfMonth(year: number, month0: number, weekday: number) {
   const d = new Date(year, month0 + 1, 0);
   const diff = (d.getDay() - weekday + 7) % 7;
   d.setDate(d.getDate() - diff);
   return d;
 }
-function withTime(base: Date, hh: number, mm: number) {
-  const d = new Date(base);
-  d.setHours(hh, mm, 0, 0);
-  return d;
-}
 
-function buildSchedule(start: Date, weeks = 10): SimpleUpcoming[] {
+// Build schedule starting from TODAY 00:00 ET so “today” sticks until midnight
+function buildSchedule(anchor: Date, weeks = 10): SimpleUpcoming[] {
   const items: SimpleUpcoming[] = [];
-  const cursor = new Date(start);
+
+  // First occurrences on/after anchor
+  const firstTue = atTime(weekdayOnOrAfter(anchor, 2), 19, 30);
+  const firstFri = atTime(weekdayOnOrAfter(anchor, 5), 19, 30);
+  const firstSatMorning = atTime(weekdayOnOrAfter(anchor, 6), 9, 0);
+  const firstSatEvening = atTime(weekdayOnOrAfter(anchor, 6), 19, 0);
+  const firstSun = atTime(weekdayOnOrAfter(anchor, 0), 14, 30);
+
+  // Helper to add N weeks
+  const plusDays = (d: Date, days: number) => {
+    const x = new Date(d);
+    x.setDate(d.getDate() + days);
+    return x;
+  };
 
   for (let w = 0; w < weeks; w++) {
-    const base = new Date(cursor);
-
-    // Weekly
-    const tue = nextWeekday(base, 2);
     items.push({
-      id: `tue-${tue}`,
-      when: withTime(tue, 19, 30),
-      title: "Estudio Bíblico",
+      id: `tue-${w}`,
+      when: plusDays(firstTue, 7 * w),
+      title: "Discipulado",
     });
-    const fri = nextWeekday(base, 5);
     items.push({
-      id: `fri-${fri}`,
-      when: withTime(fri, 19, 30),
+      id: `fri-${w}`,
+      when: plusDays(firstFri, 7 * w),
       title: "Servicio de Viernes",
     });
-    const sat = nextWeekday(base, 6);
     items.push({
-      id: `sat-prayer-${sat}`,
-      when: withTime(sat, 9, 0),
-      title: "Oración Matutina",
+      id: `sat-am-${w}`,
+      when: plusDays(firstSatMorning, 7 * w),
+      title: "Oración",
     });
     items.push({
-      id: `sat-service-${sat}`,
-      when: withTime(sat, 19, 0),
+      id: `sat-pm-${w}`,
+      when: plusDays(firstSatEvening, 7 * w),
       title: "Servicio de Sábado",
     });
-    const sun = nextWeekday(base, 0);
     items.push({
-      id: `sun-${sun}`,
-      when: withTime(sun, 14, 30),
+      id: `sun-${w}`,
+      when: plusDays(firstSun, 7 * w),
       title: "Servicio Dominical",
     });
-
-    // Monthly (for that month)
-    const y = base.getFullYear();
-    const m0 = base.getMonth();
-    const lastFri = lastWeekdayOfMonth(y, m0, 5);
-    items.push({
-      id: `lastfri-${m0}-${y}`,
-      when: withTime(lastFri, 23, 0),
-      title: "Vigilia",
-    });
-    const lastSat = lastWeekdayOfMonth(y, m0, 6);
-    items.push({
-      id: `lastsat-${m0}-${y}`,
-      when: withTime(lastSat, 19, 0),
-      title: "Cena del Señor",
-    });
-
-    cursor.setDate(cursor.getDate() + 7);
   }
 
-  /* ------- OPTIONAL ONE-OFF EXTRA UPCOMING EVENT (uncomment to use) -------
-  const extra = new Date("2025-10-10T19:00:00-04:00"); // set your date/time
-  items.push({ id: `extra-${extra.toISOString()}`, when: extra, title: "Evento Especial" });
-  ------------------------------------------------------------------------- */
+  // Monthly: current + next 2 months
+  for (let m = 0; m < 3; m++) {
+    const y = anchor.getFullYear();
+    const m0 = anchor.getMonth() + m;
+    const lastFri = lastWeekdayOfMonth(y, m0, 5);
+    const lastSat = lastWeekdayOfMonth(y, m0, 6);
+    const vigilia = atTime(lastFri, 23, 0);
+    const cena = atTime(lastSat, 19, 0);
+    if (vigilia >= anchor)
+      items.push({ id: `vigilia-${y}-${m0}`, when: vigilia, title: "Vigilia" });
+    if (cena >= anchor)
+      items.push({
+        id: `cena-${y}-${m0}`,
+        when: cena,
+        title: "Cena del Señor",
+      });
+  }
 
-  // De-dupe & sort
-  const map = new Map<string, SimpleUpcoming>();
-  for (const it of items) map.set(it.id, it);
-  return Array.from(map.values()).sort(
-    (a, b) => a.when.getTime() - b.when.getTime()
-  );
+  // Sort & dedupe by (title + date)
+  items.sort((a, b) => a.when.getTime() - b.when.getTime());
+  const seen = new Set<string>();
+  const unique: SimpleUpcoming[] = [];
+  for (const it of items) {
+    const key = `${it.title}-${it.when.toDateString()}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      unique.push(it);
+    }
+  }
+  return unique;
 }
-function nextTwo(now = new Date()): SimpleUpcoming[] {
-  return buildSchedule(now, 12)
-    .filter((e) => e.when > now)
+
+// Always show NEXT TWO relative to TODAY 00:00 ET
+function nextTwo(): SimpleUpcoming[] {
+  const anchor = nyTodayStart(); // midnight ET today
+  return buildSchedule(anchor, 12)
+    .filter((e) => e.when >= anchor)
     .slice(0, 2);
+}
+
+// Consistent, locale-free formatter for upcoming cards
+function fmtUpcoming(d: Date) {
+  const dd = String(d.getDate()).padStart(2, "0");
+  const mmShort = MONTHS_ES_SHORT[d.getMonth()];
+  const wdShort = WEEKDAY_ES_SHORT[d.getDay()];
+  return { dd, mmShort, wdShort, time: formatTime12h(d) };
 }
 
 /* ======================================================================
@@ -356,16 +417,17 @@ export default function InfoPanel() {
     [baseUrl, img]
   );
 
-  // Upcoming → always next two; refresh every minute
-  const [upcoming, setUpcoming] = useState<SimpleUpcoming[]>(() => nextTwo());
+  // Upcoming → always next two; CLIENT-ONLY (avoid SSR mismatch)
+  const [upcoming, setUpcoming] = useState<SimpleUpcoming[]>([]);
   useEffect(() => {
-    setUpcoming(nextTwo());
-    const id = setInterval(() => setUpcoming(nextTwo()), 60 * 1000);
+    const run = () => setUpcoming(nextTwo());
+    run(); // initial fill after mount
+    const id = setInterval(run, 60 * 1000);
     return () => clearInterval(id);
   }, []);
 
   return (
-    <Panel className="bg-yellow-50 dark:bg-yellow-50">
+    <Panel className="bg-yellow-100 dark:bg-yellow-100">
       {/* Title: large, like VOTD */}
       <div className="pt-1">
         <h2
@@ -381,7 +443,7 @@ export default function InfoPanel() {
         <div className="grid gap-6 md:grid-cols-2 items-stretch">
           {/* Poster (click → fullscreen) */}
           <div
-            className="relative w-full overflow-hidden rounded-xl cursor-zoom-in bg-yellow-50"
+            className="relative w-full overflow-hidden rounded-xl cursor-zoom-in bg-yellow-100"
             onClick={() => setOpen(true)}
             title="Ver a pantalla completa"
           >
@@ -485,8 +547,8 @@ export default function InfoPanel() {
                 {meta.description}
               </p>
 
-              {/* CTA — darker text */}
-              <div className="pt-2">
+              {/* CTAs: same style, side by side */}
+              <div className="pt-2 flex flex-wrap items-center gap-3">
                 <button
                   onClick={() => downloadICS(meta)}
                   className="px-5 py-3 rounded-lg border bg-white text-black font-semibold shadow hover:bg-neutral-50"
@@ -494,6 +556,15 @@ export default function InfoPanel() {
                 >
                   Agregar al calendario
                 </button>
+
+                {/* Learn more (Nosotros) */}
+                <Link
+                  href="/nosotros"
+                  className="px-5 py-3 rounded-lg border bg-white text-black font-semibold shadow hover:bg-neutral-50 inline-flex items-center justify-center"
+                  title="Conócenos"
+                >
+                  Conócenos
+                </Link>
               </div>
 
               {/* Share row */}
@@ -628,38 +699,35 @@ export default function InfoPanel() {
         {/* ===================== UPCOMING (NEXT TWO) ===================== */}
         {upcoming.length > 0 && (
           <div className="mt-8 grid sm:grid-cols-2 gap-4">
-            {upcoming.slice(0, 2).map((ev) => (
-              <div
-                key={ev.id}
-                className="rounded-xl border bg-white p-4 shadow-sm flex items-center gap-4"
-              >
-                <div className="text-center bg-yellow-100 rounded-md px-2 py-2 min-w-[56px]">
-                  <div className="text-2xl font-extrabold leading-none text-black">
-                    {ev.when.getDate().toString().padStart(2, "0")}
+            {upcoming.slice(0, 2).map((ev) => {
+              const { dd, mmShort, wdShort, time } = fmtUpcoming(ev.when);
+              return (
+                <div
+                  key={ev.id}
+                  className="rounded-xl border bg-white p-4 shadow-sm flex items-center gap-4"
+                >
+                  <div className="text-center bg-yellow-100 rounded-md px-2 py-2 min-w-[56px]">
+                    <div className="text-2xl font-extrabold leading-none text-black">
+                      {dd}
+                    </div>
+                    <div className="uppercase text-[10px] tracking-wider text-black">
+                      {mmShort}
+                    </div>
                   </div>
-                  <div className="uppercase text-[10px] tracking-wider text-black">
-                    {ev.when.toLocaleDateString("es-ES", { month: "short" })}
+                  <div className="min-w-0">
+                    <p className="font-semibold text-neutral-900 truncate">
+                      {ev.title}
+                    </p>
+                    <p
+                      className="text-sm text-neutral-800"
+                      suppressHydrationWarning
+                    >
+                      {wdShort}, {dd} {mmShort} · {time}
+                    </p>
                   </div>
                 </div>
-                <div className="min-w-0">
-                  <p className="font-semibold text-neutral-900 truncate">
-                    {ev.title}
-                  </p>
-                  <p className="text-sm text-neutral-800">
-                    {ev.when.toLocaleDateString("es-ES", {
-                      weekday: "short",
-                      day: "2-digit",
-                      month: "short",
-                    })}{" "}
-                    ·{" "}
-                    {ev.when.toLocaleTimeString("es-ES", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </p>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </PanelBody>
