@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 
 type Slide = {
   /** Optional image path (e.g., "/galeria/01.jpg"). If omitted, a placeholder block is shown. */
@@ -45,11 +46,13 @@ export default function GalleryCarousel({
       {/* Visual area */}
       <div className="relative h-64 md:h-80 lg:h-96 bg-gray-200">
         {current.src ? (
-          // Using <img> to avoid build-time errors if files aren't present yet
-          <img
+          <Image
             src={current.src}
             alt={current.alt ?? ""}
-            className="absolute inset-0 h-full w-full object-cover"
+            fill
+            sizes="(min-width: 1024px) 1024px, 100vw"
+            className="object-cover"
+            priority={index === 0}
           />
         ) : (
           // Placeholder block
