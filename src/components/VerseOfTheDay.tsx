@@ -48,6 +48,19 @@ function todayImageIndex(): number {
 /* ---------- Types ---------- */
 type Votd = { reference: string; text: string };
 
+/** Augment Window with our interval handle (number in browsers). */
+declare global {
+  interface Window {
+    __votdInterval?: number;
+  }
+}
+
+/** Narrowed Navigator to use Web Share API (with files) without ts-ignore. */
+type FileShareNavigator = Navigator & {
+  canShare?: (data?: ShareData & { files?: File[] }) => boolean;
+  share?: (data?: ShareData & { files?: File[] }) => Promise<void>;
+};
+
 export default function VerseOfTheDay() {
   const [data, setData] = useState<Votd | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -80,8 +93,16 @@ export default function VerseOfTheDay() {
       setErr(null);
       const res = await fetch("/api/votd", { cache: "no-store" });
       if (!res.ok) throw new Error(await res.text());
-      const json = await res.json();
-      setData({ reference: json.reference, text: json.text });
+      const json: unknown = await res.json();
+      // narrow unknown → Votd-like
+      const maybe = json as Partial<Votd>;
+      if (
+        typeof maybe.text !== "string" ||
+        typeof maybe.reference !== "string"
+      ) {
+        throw new Error("Malformed VOTD response");
+      }
+      setData({ reference: maybe.reference, text: maybe.text });
     } catch {
       setErr("No se pudo cargar el versículo. Inténtalo más tarde.");
     } finally {
@@ -90,25 +111,27 @@ export default function VerseOfTheDay() {
   }
   useEffect(() => {
     fetchVerse();
+     
   }, []);
 
   // Flip at midnight ET (keeps verse & image in sync daily)
   useEffect(() => {
     if (imgIndex == null) return; // start timers only after first image is set
     const ms = msUntilNextMidnightNY();
-    const timer = setTimeout(() => {
+
+    const timer = window.setTimeout(() => {
       setImgIndex(todayImageIndex());
       fetchVerse();
-      const nextTimer = setInterval(() => {
+      const nextTimer = window.setInterval(() => {
         setImgIndex(todayImageIndex());
         fetchVerse();
       }, 24 * 60 * 60 * 1000);
-      (window as any).__votdInterval = nextTimer;
+      window.__votdInterval = nextTimer;
     }, ms);
+
     return () => {
-      clearTimeout(timer);
-      if ((window as any).__votdInterval)
-        clearInterval((window as any).__votdInterval);
+      window.clearTimeout(timer);
+      if (window.__votdInterval) window.clearInterval(window.__votdInterval);
     };
   }, [imgIndex]);
 
@@ -133,7 +156,7 @@ export default function VerseOfTheDay() {
         cacheBust: true,
         backgroundColor: "#000",
         // exclude the share row (has data-exclude-capture="true")
-        filter: (n) =>
+        filter: (n: Element) =>
           !(n instanceof HTMLElement && n.dataset?.excludeCapture === "true"),
       });
 
@@ -145,10 +168,10 @@ export default function VerseOfTheDay() {
       ).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}.png`;
       const file = new File([blob], fileName, { type: "image/png" });
 
-      // Prefer native share (mobile)
-      // @ts-ignore
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({
+      // Prefer native share (mobile) — typed navigator (no ts-ignore)
+      const nav = navigator as FileShareNavigator;
+      if (nav.canShare?.({ files: [file] })) {
+        await nav.share?.({
           files: [file],
           title: "Versículo del día",
           text: data ? `${data.reference}` : undefined,
@@ -165,13 +188,17 @@ export default function VerseOfTheDay() {
       a.remove();
       if (/iP(ad|hone|od)/.test(navigator.userAgent))
         window.open(dataUrl, "_blank");
-    } catch (err: any) {
-      if (err?.name === "AbortError" || err?.name === "InvalidStateError")
+    } catch (err: unknown) {
+      if (
+        err instanceof DOMException &&
+        (err.name === "AbortError" || err.name === "InvalidStateError")
+      ) {
         return;
+      }
       console.error("share/download failed:", err);
       alert("No se pudo compartir/descargar la imagen.");
     } finally {
-      setTimeout(() => setIsSharing(false), 200);
+      window.setTimeout(() => setIsSharing(false), 200);
     }
   }
 
@@ -328,7 +355,7 @@ export default function VerseOfTheDay() {
                 <Image src="/two-links.png" alt="SMS" width={22} height={22} />
               </button>
 
-              {/* Download — your icon; disabled while sharing to avoid InvalidStateError */}
+              {/* Download — disabled while sharing to avoid InvalidStateError */}
               <button
                 onClick={downloadCard}
                 title="Descargar imagen"
