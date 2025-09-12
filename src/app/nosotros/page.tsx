@@ -4,8 +4,9 @@ import Image from "next/image";
 import GalleryCarousel from "@/components/GalleryCarousel";
 
 export const metadata: Metadata = {
-  title: "Nosotros | Ministerio Familiar La Cosecha",
-  description: "Conoce nuestra misión, visión y liderazgo.",
+  alternates: { canonical: "/nosotros" },
+  title: "Nosotros",
+  description: "Conoce nuestra visión, misión y liderazgo.",
 };
 
 export default function NosotrosPage() {

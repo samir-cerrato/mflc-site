@@ -96,7 +96,7 @@ export default function Navbar() {
           <Link href="/visit" className="hover:underline">
             Visítanos
           </Link>
-          <Link href="/contacto" className="hover:underline">
+          <Link href="/contact" className="hover:underline">
             Contáctanos
           </Link>
         </nav>

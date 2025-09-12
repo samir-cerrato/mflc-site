@@ -3,6 +3,14 @@ import AnnouncementBar from "@/components/AnnouncementBar";
 import Hero from "@/components/Hero";
 import InfoPanel from "@/components/InfoPanel";
 import VerseOfTheDay from "@/components/VerseOfTheDay";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  alternates: { canonical: "/" },
+  title: "Ministerio Familiar La Cosecha – Yonkers, NY",
+  description:
+    "Iglesia cristiana en Yonkers, NY. Servicios: viernes 7:30 PM, sábado 7:00 PM y domingo 2:30 PM.",
+};
 
 export default function Page() {
   return (

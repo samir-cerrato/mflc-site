@@ -1,10 +1,15 @@
-// src/app/visitanos/page.tsx
-"use client";
-
+// src/app/visit/page.tsx
 import Link from "next/link";
-import { useMemo, useState } from "react";
-import { MapPin, ExternalLink, Copy, Check } from "lucide-react";
+import { MapPin, ExternalLink } from "lucide-react";
 import type { ReactNode } from "react";
+import type { Metadata } from "next";
+import CopyAddressButton from "./CopyAddressButton";
+
+export const metadata: Metadata = {
+  alternates: { canonical: "/visit" },
+  title: "Visítanos",
+  description: "Conoce nuestra iglesia, horarios y preguntas.",
+};
 
 const ADDRESS_TEXT = "191 North Broadway, Yonkers, NY 10701";
 const MAPS_URL = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
@@ -29,17 +34,17 @@ const FAQ: QA[] = [
   },
   {
     q: "¿Cuál es la duración del servicio? ¿Qué puedo esperar del servicio?",
-    a: "Aproximadamente 90-120 minutos. Incluye alabanza y oración, la palabra de ofrenda, y un mensaje bíblico práctico. Al final hay minstracion de oración y un rico protemplo.",
+    a: "Aproximadamente 90–120 minutos. Incluye alabanza y oración, la palabra de ofrenda y un mensaje bíblico práctico. Al final hay ministración de oración y un rico protemplo.",
   },
   {
     q: "¿Puedo venir con niños?",
-    a: "¡Claro! Los niños son bienvenidos en el templo. Los sabados hay clases para niños de edades de 5 - 14 duramente el culto.",
+    a: "¡Claro! Los niños son bienvenidos en el templo. Los sábados hay clases para niños de 5–14 años durante el culto.",
   },
   {
     q: "¿Transmiten en vivo o suben los mensajes?",
     a: (
       <>
-        Sí, transmitimos y subimos nuestras predicaciones en vivo en{" "}
+        Sí, transmitimos y subimos nuestras predicaciones en{" "}
         <a
           href={FACEBOOK_URL}
           target="_blank"
@@ -70,7 +75,7 @@ const FAQ: QA[] = [
           (914) 258-6720
         </a>
         , o mándanos un DM en redes, o completa el formulario{" "}
-        <Link href="/contacto" className="underline hover:text-yellow-700">
+        <Link href="/contact" className="underline hover:text-yellow-700">
           aquí
         </Link>
         .
@@ -81,11 +86,11 @@ const FAQ: QA[] = [
     q: "¿Cómo llego en transporte público?",
     a: (
       <>
-        Líneas 6, 25, o 30 con paradas en North Broadway y Ashburton Ave o línea
+        Líneas 6, 25 o 30 con paradas en North Broadway y Ashburton Ave, o línea
         78 con paradas en Palisade Ave y Ashburton Ave. Ver rutas en Google Maps
         desde{" "}
         <a href="#mapa" className="underline hover:text-yellow-700">
-          la página arriba
+          el mapa arriba
         </a>
         .
       </>
@@ -108,8 +113,8 @@ const FAQ: QA[] = [
         <a href="tel:+19142586720" className="underline hover:text-yellow-700">
           (914) 258-6720
         </a>{" "}
-        y escribe una pequeña nota diciendo para qué sirve (ejemplo: diezmos,
-        protemplo, etc.). Gracias por apoyar la obra.
+        y escribe una pequeña nota diciendo para qué sirve (ej.: diezmos,
+        protemplo, etc.). ¡Gracias por apoyar la obra!
       </>
     ),
   },
@@ -124,21 +129,9 @@ const SERVICES = [
   { title: "Servicio (Domingo)", time: "2:30 pm" },
 ];
 
-export default function VisitanosPage() {
-  const [copied, setCopied] = useState(false);
-
-  const leftCol = useMemo(() => SERVICES.slice(0, 3), []);
-  const rightCol = useMemo(() => SERVICES.slice(3, 6), []);
-
-  const copyAddress = async () => {
-    try {
-      await navigator.clipboard.writeText(ADDRESS_TEXT);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    } catch {
-      /* noop */
-    }
-  };
+export default function VisitPage() {
+  const leftCol = SERVICES.slice(0, 3);
+  const rightCol = SERVICES.slice(3, 6);
 
   return (
     <main className="mx-auto w-full max-w-screen-2xl px-3 md:px-6 py-10">
@@ -156,14 +149,14 @@ export default function VisitanosPage() {
             </span>
           </Link>
           . Si tienes preguntas o inquietudes,{" "}
-          <Link href="/contacto" className="underline hover:text-yellow-700">
+          <Link href="/contact" className="underline hover:text-yellow-700">
             contáctanos
           </Link>
           .
         </p>
       </header>
 
-      {/* MAPA (always interactive) */}
+      {/* MAPA */}
       <section
         id="mapa"
         className="relative rounded-3xl border border-yellow-400 bg-yellow-100 shadow"
@@ -179,11 +172,9 @@ export default function VisitanosPage() {
           />
         </div>
 
-        {/* Larger overlay moved to upper-right */}
-        {/* Overlay — smaller on mobile, larger on desktop */}
         <div
           className="pointer-events-none absolute right-2 top-2 rounded-lg bg-white/90 px-3 py-2 shadow-lg
-                md:right-3 md:top-3 md:rounded-2xl md:px-5 md:py-3"
+                     md:right-3 md:top-3 md:rounded-2xl md:px-5 md:py-3"
         >
           <div className="text-sm md:text-lg font-semibold leading-tight">
             Mapa interactivo
@@ -191,9 +182,9 @@ export default function VisitanosPage() {
         </div>
       </section>
 
-      {/* Two large columns: Dirección + Horarios */}
+      {/* Dirección + Horarios */}
       <section className="mt-8 grid grid-cols-1 gap-8 md:grid-cols-2 items-stretch">
-        {/* Dirección (centered) */}
+        {/* Dirección */}
         <div className="flex flex-col justify-center rounded-3xl border border-yellow-400 bg-white p-6 md:p-8 shadow text-center h-full">
           <div>
             <h2 className="mb-3 text-2xl md:text-3xl font-bold">Dirección</h2>
@@ -220,25 +211,12 @@ export default function VisitanosPage() {
               <ExternalLink className="h-4 w-4" />
             </Link>
 
-            <button
-              onClick={copyAddress}
-              className="inline-flex items-center gap-2 rounded-xl border px-5 py-3 text-base md:text-lg hover:bg-yellow-50"
-              aria-label="Copiar dirección"
-            >
-              {copied ? (
-                <>
-                  <Check className="h-5 w-5" /> Copiado
-                </>
-              ) : (
-                <>
-                  <Copy className="h-5 w-5" /> Copiar dirección
-                </>
-              )}
-            </button>
+            {/* Client child for clipboard */}
+            <CopyAddressButton address={ADDRESS_TEXT} />
           </div>
         </div>
 
-        {/* Horarios (centered, 2 columns) */}
+        {/* Horarios */}
         <div className="rounded-3xl border border-yellow-400 bg-white p-6 md:p-8 shadow text-center h-full">
           <h2 className="mb-3 text-2xl md:text-3xl font-bold">
             Horarios de servicio
@@ -265,7 +243,7 @@ export default function VisitanosPage() {
         </div>
       </section>
 
-      {/* FAQ: title centered; items span full width */}
+      {/* FAQ */}
       <section className="mt-10 rounded-3xl border border-yellow-400 bg-white p-6 md:p-8 shadow">
         <h2 className="mb-4 text-2xl md:text-3xl font-bold text-center">
           Preguntas frecuentes

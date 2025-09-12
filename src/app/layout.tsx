@@ -25,7 +25,6 @@ export const metadata: Metadata = {
     "iglesia en Yonkers",
     "La Cosecha Yonkers",
   ],
-  alternates: { canonical: "/" },
   openGraph: {
     type: "website",
     url: "https://www.mflcyonkers.com/",
@@ -33,14 +32,14 @@ export const metadata: Metadata = {
     title: "Ministerio Familiar La Cosecha – Yonkers, NY",
     description:
       "Iglesia cristiana en Yonkers, NY. Conoce nuestros horarios y participa.",
-    images: [{ url: "/logo.PNG", width: 1200, height: 630 }],
+    images: [{ url: "/logo.PNG", width: 1200, height: 630 }], // swap to /og-cover.jpg when ready
     locale: "es_US",
   },
   twitter: {
     card: "summary_large_image",
     title: "Ministerio Familiar La Cosecha – Yonkers, NY",
     description: "Iglesia cristiana en Yonkers, NY. ¡Te esperamos!",
-    images: ["/logo.PNG"],
+    images: ["/logo.PNG"], // swap to /og-cover.jpg when ready
   },
   icons: {
     icon: "/favicon.ico",
