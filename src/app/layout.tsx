@@ -32,14 +32,14 @@ export const metadata: Metadata = {
     title: "Ministerio Familiar La Cosecha – Yonkers, NY",
     description:
       "Iglesia cristiana en Yonkers, NY. Conoce nuestros horarios y participa.",
-    images: [{ url: "/og-cover.jpg", width: 1200, height: 630 }],
+    images: [{ url: "/logo.PNG", width: 1200, height: 630 }],
     locale: "es_US",
   },
   twitter: {
     card: "summary_large_image",
     title: "Ministerio Familiar La Cosecha – Yonkers, NY",
     description: "Iglesia cristiana en Yonkers, NY. ¡Te esperamos!",
-    images: ["/og-cover.jpg"],
+    images: ["/logo.PNG"],
   },
   icons: {
     icon: "/favicon.ico",
