@@ -171,7 +171,7 @@ export default function Navbar() {
             </li>
             <li>
               <Link
-                href="/contacto"
+                href="/contact"
                 className="block px-3 py-2 hover:bg-yellow-200"
                 onClick={() => setMobileOpen(false)}
               >
