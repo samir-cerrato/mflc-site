@@ -1,3 +1,4 @@
+// src/app/contact/ContactForm.tsx
 "use client";
 
 import * as React from "react";
@@ -5,6 +6,7 @@ import { useFormStatus } from "react-dom";
 
 type State = { ok?: boolean; error?: string };
 type SubmitAction = (prevState: State, formData: FormData) => Promise<State>;
+type ContactMethod = "phone" | "email" | "visit" | "";
 
 function SubmitButton() {
   const { pending } = useFormStatus();
@@ -43,12 +45,10 @@ export default function ContactForm({ action }: { action: SubmitAction }) {
     error: undefined,
   });
 
-  const [contactMethod, setContactMethod] = React.useState<
-    "phone" | "email" | "visit" | ""
-  >("");
-  const [countryCode, setCountryCode] = React.useState("+1");
+  const [contactMethod, setContactMethod] = React.useState<ContactMethod>("");
+  const [countryCode, setCountryCode] = React.useState<string>("+1");
 
-  // Refs for banners (keep your scroll-to logic if you added it)
+  // Success / error banners (auto-scroll + focus)
   const successRef = React.useRef<HTMLDivElement>(null);
   const errorRef = React.useRef<HTMLDivElement>(null);
 
@@ -58,6 +58,7 @@ export default function ContactForm({ action }: { action: SubmitAction }) {
       successRef.current.focus({ preventScroll: true });
     }
   }, [state.ok]);
+
   React.useEffect(() => {
     if (state.error && errorRef.current) {
       errorRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -75,13 +76,12 @@ export default function ContactForm({ action }: { action: SubmitAction }) {
     }
   }, [state.ok]);
 
-  // Bigger, clearer inputs (lighter bg, dark text)
+  // Bigger, clearer inputs (light bg, dark text, strong focus)
   const inputCls =
     "w-full rounded-md border-2 border-yellow-200 bg-white px-4 py-3 text-xl text-neutral-900 " +
     "placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-yellow-300 focus:border-yellow-400";
 
   return (
-    // Wider + darker overall text
     <div className="max-w-5xl w-full text-[1.15rem] md:text-[1.2rem] text-neutral-900">
       {/* Alerts */}
       {state.ok ? (
@@ -128,7 +128,7 @@ export default function ContactForm({ action }: { action: SubmitAction }) {
           </label>
         </div>
 
-        {/* Datos de contacto (bigger panel) */}
+        {/* Datos de contacto */}
         <section className="rounded-2xl border border-yellow-300 bg-yellow-50 p-7 shadow-sm">
           <h2 className="text-2xl font-semibold mb-5">Datos de contacto</h2>
 
@@ -168,6 +168,7 @@ export default function ContactForm({ action }: { action: SubmitAction }) {
             </div>
           </div>
 
+          {/* Método de contacto */}
           <div className="mt-6 grid gap-6 sm:grid-cols-2">
             <div>
               <label className="block text-base font-medium mb-1.5">
@@ -178,7 +179,9 @@ export default function ContactForm({ action }: { action: SubmitAction }) {
                 required
                 className={inputCls}
                 value={contactMethod}
-                onChange={(e) => setContactMethod(e.target.value as any)}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                  setContactMethod(e.target.value as ContactMethod)
+                }
               >
                 <option value="" disabled>
                   Selecciona una opción
@@ -189,6 +192,7 @@ export default function ContactForm({ action }: { action: SubmitAction }) {
               </select>
             </div>
 
+            {/* Email (conditionally required) */}
             <div>
               <label className="block text-base font-medium mb-1.5">
                 Correo electrónico
@@ -210,6 +214,7 @@ export default function ContactForm({ action }: { action: SubmitAction }) {
             </div>
           </div>
 
+          {/* Teléfono (código internacional + número) */}
           <div className="mt-6 grid gap-6 sm:grid-cols-[minmax(10rem,13rem)_1fr]">
             <div>
               <label className="block text-base font-medium mb-1.5">
@@ -219,7 +224,9 @@ export default function ContactForm({ action }: { action: SubmitAction }) {
                 name="countryCode"
                 className={inputCls}
                 value={countryCode}
-                onChange={(e) => setCountryCode(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                  setCountryCode(e.target.value)
+                }
                 required={contactMethod === "phone"}
               >
                 {COUNTRY_CODES.map((c) => (
@@ -250,7 +257,7 @@ export default function ContactForm({ action }: { action: SubmitAction }) {
             </div>
           </div>
 
-          {/* Dirección */}
+          {/* Dirección (para visita a casa) */}
           <div className="mt-6 grid gap-6">
             <div>
               <label className="block text-base font-medium mb-1.5">
@@ -318,7 +325,7 @@ export default function ContactForm({ action }: { action: SubmitAction }) {
           </div>
         </section>
 
-        {/* Mensaje (bigger panel) */}
+        {/* Mensaje */}
         <section className="rounded-2xl border border-yellow-300 bg-yellow-50 p-7 shadow-sm">
           <h2 className="text-2xl font-semibold mb-5">Mensaje</h2>
           <label className="block text-base font-medium mb-1.5">
