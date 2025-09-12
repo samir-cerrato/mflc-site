@@ -121,7 +121,7 @@ const SERVICES = [
   { title: "Vigilia (último viernes del mes)", time: "11:00 pm" },
   { title: "Oración (Sábado)", time: "9:00 am" },
   { title: "Servicio (Sábado)", time: "7:00 pm" },
-  { title: "Servicio (Domingo)", time: "2:00 pm" },
+  { title: "Servicio (Domingo)", time: "2:30 pm" },
 ];
 
 export default function VisitanosPage() {

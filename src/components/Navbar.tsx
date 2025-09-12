@@ -136,7 +136,7 @@ export default function Navbar() {
 
             {/* Redes Sociales on mobile */}
             <li>
-              <details className="group">
+              <details className="group [&>summary::-webkit-details-marker]:hidden">
                 <summary className="flex cursor-pointer list-none items-center justify-between px-3 py-2 text-base hover:bg-yellow-200">
                   <span>Redes Sociales</span>
                   <ChevronDown className="h-4 w-4 transition group-open:rotate-180" />

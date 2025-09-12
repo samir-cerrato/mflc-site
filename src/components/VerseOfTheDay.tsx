@@ -111,7 +111,6 @@ export default function VerseOfTheDay() {
   }
   useEffect(() => {
     fetchVerse();
-     
   }, []);
 
   // Flip at midnight ET (keeps verse & image in sync daily)
@@ -238,15 +237,15 @@ export default function VerseOfTheDay() {
       <div className="relative z-[1] flex h-full flex-col">
         {/* Title */}
         <div className="pt-4 md:pt-6 px-4">
-          <h2 className="text-center font-extrabold underline underline-offset-8 text-white text-3xl md:text-5xl lg:text-6xl tracking-tight">
+          <h2 className="text-center font-extrabold underline underline-offset-8 text-white text-3xl md:text-5xl lg:text-5xl tracking-tight">
             Versículo del día
           </h2>
         </div>
 
         {/* Center the verse box in the available space */}
-        <div className="flex-1 px-4 py-4 md:px-6 md:py-6 flex items-center justify-center">
+        <div className="flex-1 px-4 py-3 md:px-5 md:py-4 flex items-center justify-center">
           <div className="max-w-4xl w-full">
-            <div className="mx-auto rounded-xl border border-white/15 bg-black/50 backdrop-blur-md text-white p-5 md:p-6 lg:p-7">
+            <div className="mx-auto rounded-xl border border-white/15 bg-black/50 backdrop-blur-md text-white p-4 md:p-5 lg:p-6">
               {loading && <p className="text-center">Cargando…</p>}
               {err && <p className="text-center text-red-200">{err}</p>}
               {data && (

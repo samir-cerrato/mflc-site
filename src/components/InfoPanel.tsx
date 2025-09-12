@@ -1,5 +1,5 @@
 // src/components/InfoPanel.tsx
-// this is for the panels below the image. the left one is for events and the right one is for the verse of the day
+// Left panel for events (pairs with VerseOfTheDay on the right)
 
 "use client";
 import { useEffect, useMemo, useState, useCallback } from "react";
@@ -27,15 +27,12 @@ const EVENTS = [
 
 /* ======================================================================
    MANUAL FEATURED (MM/DD/YYYY) — YOU CONTROL THESE
-   - date: “MM/DD/YYYY”
-   - time: “h:mm AM/PM” or “HH:mm”
-   - address fixed to “191 North Broadway”
 ====================================================================== */
 type Occurrence = {
   title: string;
   date: string; // e.g. "09/14/2025"
   time: string; // e.g. "2:30 PM" or "19:30"
-  endTime?: string; // optional
+  endTime?: string;
 };
 
 type FeaturedMeta = {
@@ -59,17 +56,10 @@ const FEATURED_META: FeaturedMeta[] = [
       { title: "Aniversario (Día 3)", date: "09/14/2025", time: "2:30 PM" },
     ],
   },
-  // {  // ← Example extra featured (keep commented until needed)
-  //   title: "Noche de Alabanza",
-  //   address: "191 North Broadway, Yonkers, NY 10701",
-  //   mapsQuery: "191 North Broadway, Yonkers, NY 10701",
-  //   description: "Una noche especial de adoración y gratitud.",
-  //   occurrences: [{ title: "Noche de Alabanza", date: "10/05/2025", time: "7:00 PM" }],
-  // },
 ];
 
 /* ======================================================================
-   DATE/TIME HELPERS (no external libs)
+   DATE/TIME HELPERS
 ====================================================================== */
 const MONTHS_ES = [
   "enero",
@@ -155,7 +145,7 @@ function formatTime12h(date: Date) {
 }
 
 /* ======================================================================
-   ADD TO CALENDAR (.ics) — uses your typed strings in ET
+   ADD TO CALENDAR (.ics)
 ====================================================================== */
 function icsLocal(y: number, m: number, d: number, hh: number, mm: number) {
   return `${y}${pad(m)}${pad(d)}T${pad(hh)}${pad(mm)}00`;
@@ -216,11 +206,9 @@ function downloadICS(meta: FeaturedMeta) {
 
 /* ======================================================================
    UPCOMING (AUTO): always next TWO from your rules
-   ✅ Today counts all day; rollover at midnight ET
 ====================================================================== */
 type SimpleUpcoming = { id: string; when: Date; title: string };
 
-// New York “today 00:00:00” anchor
 function nyTodayStart(): Date {
   const fmt = new Intl.DateTimeFormat("en-CA", {
     timeZone: "America/New_York",
@@ -232,7 +220,6 @@ function nyTodayStart(): Date {
   return new Date(y, m - 1, d, 0, 0, 0, 0);
 }
 
-// Weekday ON OR AFTER the anchor (includes today)
 function weekdayOnOrAfter(anchor: Date, weekday: number): Date {
   const a = new Date(
     anchor.getFullYear(),
@@ -243,20 +230,18 @@ function weekdayOnOrAfter(anchor: Date, weekday: number): Date {
     0,
     0
   );
-  const delta = (weekday - a.getDay() + 7) % 7; // 0..6
+  const delta = (weekday - a.getDay() + 7) % 7;
   const d = new Date(a);
   d.setDate(a.getDate() + delta);
   return d;
 }
 
-// Set time on a date
 function atTime(base: Date, hh: number, mm: number): Date {
   const d = new Date(base);
   d.setHours(hh, mm, 0, 0);
   return d;
 }
 
-// Last weekday of month
 function lastWeekdayOfMonth(year: number, month0: number, weekday: number) {
   const d = new Date(year, month0 + 1, 0);
   const diff = (d.getDay() - weekday + 7) % 7;
@@ -264,18 +249,15 @@ function lastWeekdayOfMonth(year: number, month0: number, weekday: number) {
   return d;
 }
 
-// Build schedule starting from TODAY 00:00 ET so “today” sticks until midnight
 function buildSchedule(anchor: Date, weeks = 10): SimpleUpcoming[] {
   const items: SimpleUpcoming[] = [];
 
-  // First occurrences on/after anchor
   const firstTue = atTime(weekdayOnOrAfter(anchor, 2), 19, 30);
   const firstFri = atTime(weekdayOnOrAfter(anchor, 5), 19, 30);
   const firstSatMorning = atTime(weekdayOnOrAfter(anchor, 6), 9, 0);
   const firstSatEvening = atTime(weekdayOnOrAfter(anchor, 6), 19, 0);
   const firstSun = atTime(weekdayOnOrAfter(anchor, 0), 14, 30);
 
-  // Helper to add N weeks
   const plusDays = (d: Date, days: number) => {
     const x = new Date(d);
     x.setDate(d.getDate() + days);
@@ -310,7 +292,6 @@ function buildSchedule(anchor: Date, weeks = 10): SimpleUpcoming[] {
     });
   }
 
-  // Monthly: current + next 2 months
   for (let m = 0; m < 3; m++) {
     const y = anchor.getFullYear();
     const m0 = anchor.getMonth() + m;
@@ -328,7 +309,6 @@ function buildSchedule(anchor: Date, weeks = 10): SimpleUpcoming[] {
       });
   }
 
-  // Sort & dedupe by (title + date)
   items.sort((a, b) => a.when.getTime() - b.when.getTime());
   const seen = new Set<string>();
   const unique: SimpleUpcoming[] = [];
@@ -342,15 +322,13 @@ function buildSchedule(anchor: Date, weeks = 10): SimpleUpcoming[] {
   return unique;
 }
 
-// Always show NEXT TWO relative to TODAY 00:00 ET
 function nextTwo(): SimpleUpcoming[] {
-  const anchor = nyTodayStart(); // midnight ET today
+  const anchor = nyTodayStart();
   return buildSchedule(anchor, 12)
     .filter((e) => e.when >= anchor)
     .slice(0, 2);
 }
 
-// Consistent, locale-free formatter for upcoming cards
 function fmtUpcoming(d: Date) {
   const dd = String(d.getDate()).padStart(2, "0");
   const mmShort = MONTHS_ES_SHORT[d.getMonth()];
@@ -388,7 +366,6 @@ export default function InfoPanel() {
   const img = EVENTS[i] ?? "/placeholder.png";
   const meta = FEATURED_META[i] ?? FEATURED_META[0];
 
-  // Autoplay only if multiple images
   const onNext = useCallback(() => setI((n) => (n + 1) % EVENTS.length), []);
   useEffect(() => {
     if (!hasMany || open) return;
@@ -396,7 +373,6 @@ export default function InfoPanel() {
     return () => clearInterval(id);
   }, [hasMany, open, onNext]);
 
-  // Keyboard in fullscreen
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -409,7 +385,6 @@ export default function InfoPanel() {
     return () => window.removeEventListener("keydown", onKey);
   }, [open]);
 
-  // Hydration-safe share URL
   const [baseUrl, setBaseUrl] = useState("");
   useEffect(() => setBaseUrl(window.location.origin), []);
   const shareUrl = useMemo(
@@ -417,33 +392,37 @@ export default function InfoPanel() {
     [baseUrl, img]
   );
 
-  // Upcoming → always next two; CLIENT-ONLY (avoid SSR mismatch)
   const [upcoming, setUpcoming] = useState<SimpleUpcoming[]>([]);
   useEffect(() => {
     const run = () => setUpcoming(nextTwo());
-    run(); // initial fill after mount
+    run();
     const id = setInterval(run, 60 * 1000);
     return () => clearInterval(id);
   }, []);
 
   return (
-    <Panel className="bg-yellow-100 dark:bg-yellow-100">
-      {/* Title: large, like VOTD */}
+    <Panel
+      className="bg-yellow-100 dark:bg-yellow-100"
+      cap={false}
+      overflow="visible"
+    >
+      {/* Title: slightly smaller on lg to reduce height */}
       <div className="pt-1">
         <h2
           className="text-center font-extrabold underline underline-offset-8 text-black
-                       text-3xl md:text-5xl lg:text-6xl tracking-tight"
+                     text-3xl md:text-5xl lg:text-5xl tracking-tight"
         >
           Eventos
         </h2>
       </div>
 
-      <PanelBody className="md:mt-6">
-        {/* Featured: poster + centered details */}
-        <div className="grid gap-6 md:grid-cols-2 items-stretch">
-          {/* Poster (click → fullscreen) */}
+      <PanelBody className="md:mt-4">
+        {/* Featured: poster + details */}
+        {/* KEY: items-start prevents stretching; poster gets self-start */}
+        <div className="grid gap-6 md:grid-cols-2 items-start">
+          {/* Poster */}
           <div
-            className="relative w-full overflow-hidden rounded-xl cursor-zoom-in bg-yellow-100"
+            className="relative w-full overflow-hidden rounded-xl cursor-zoom-in bg-yellow-100 self-start pb-4"
             onClick={() => setOpen(true)}
             title="Ver a pantalla completa"
           >
@@ -455,8 +434,8 @@ export default function InfoPanel() {
               className="object-cover blur-2xl scale-110 opacity-40 pointer-events-none"
               aria-hidden
             />
-            {/* Foreground poster */}
-            <div className="relative z-10 w-full aspect-[3/4]">
+            {/* Foreground poster with fixed ratio */}+{" "}
+            <div className="relative z-10 w-full aspect-[4/5]">
               <Image
                 src={img}
                 alt="Afiche del evento"
@@ -464,8 +443,6 @@ export default function InfoPanel() {
                 className="object-contain"
               />
             </div>
-
-            {/* Arrows appear only if multiple images */}
             {hasMany && (
               <>
                 <button
@@ -496,14 +473,14 @@ export default function InfoPanel() {
             )}
           </div>
 
-          {/* Details (centered vertically) — BIGGER text */}
+          {/* Details */}
           <div className="flex items-center">
-            <div className="w-full space-y-6">
+            <div className="w-full space-y-5">
               <h3 className="text-3xl md:text-4xl lg:text-5xl font-extrabold tracking-tight text-neutral-900 text-center md:text-left">
                 {meta.title}
               </h3>
 
-              <ul className="space-y-4 text-neutral-900 text-lg md:text-xl">
+              <ul className="space-y-3 text-neutral-900 text-lg md:text-xl">
                 <li className="flex items-start gap-3">
                   <CalendarDays className="h-6 w-6 mt-0.5" />
                   <span className="leading-tight">
@@ -542,12 +519,10 @@ export default function InfoPanel() {
                 </li>
               </ul>
 
-              {/* Description */}
               <p className="text-neutral-900 text-lg md:text-xl leading-relaxed">
                 {meta.description}
               </p>
 
-              {/* CTAs: same style, side by side */}
               <div className="pt-2 flex flex-wrap items-center gap-3">
                 <button
                   onClick={() => downloadICS(meta)}
@@ -557,7 +532,6 @@ export default function InfoPanel() {
                   Agregar al calendario
                 </button>
 
-                {/* Learn more (Nosotros) */}
                 <Link
                   href="/nosotros"
                   className="px-5 py-3 rounded-lg border bg-white text-black font-semibold shadow hover:bg-neutral-50 inline-flex items-center justify-center"
@@ -567,14 +541,13 @@ export default function InfoPanel() {
                 </Link>
               </div>
 
-              {/* Share row */}
-              <div className="pt-4 border-t">
+              <div className="pt-3 border-t">
                 <p className="text-sm text-neutral-900 text-center md:text-left">
                   Comparte ahora
                 </p>
                 {shareUrl ? (
                   <div className="mt-2 flex items-center justify-center md:justify-start gap-4">
-                    {/* Facebook */}
+                    {/* social icons unchanged */}
                     <a
                       href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
                         shareUrl
@@ -591,7 +564,6 @@ export default function InfoPanel() {
                         height={22}
                       />
                     </a>
-                    {/* Instagram (info) */}
                     <button
                       onClick={() =>
                         alert(
@@ -608,7 +580,6 @@ export default function InfoPanel() {
                         height={22}
                       />
                     </button>
-                    {/* WhatsApp */}
                     <a
                       href={`https://wa.me/?text=${encodeURIComponent(
                         `Te comparto esta invitación: ${shareUrl}`
@@ -625,7 +596,6 @@ export default function InfoPanel() {
                         height={22}
                       />
                     </a>
-                    {/* Email */}
                     <a
                       href={`mailto:?subject=${encodeURIComponent(
                         "Invitación a nuestro evento"
@@ -642,7 +612,6 @@ export default function InfoPanel() {
                         height={22}
                       />
                     </a>
-                    {/* SMS */}
                     <button
                       onClick={async () => {
                         if (!shareUrl) return;
@@ -669,7 +638,6 @@ export default function InfoPanel() {
                         height={22}
                       />
                     </button>
-                    {/* Download current poster */}
                     <button
                       onClick={() =>
                         downloadImage(
@@ -696,9 +664,9 @@ export default function InfoPanel() {
           </div>
         </div>
 
-        {/* ===================== UPCOMING (NEXT TWO) ===================== */}
+        {/* UPCOMING (NEXT TWO) — slightly less top margin */}
         {upcoming.length > 0 && (
-          <div className="mt-8 grid sm:grid-cols-2 gap-4">
+          <div className="mt-6 grid sm:grid-cols-2 gap-4">
             {upcoming.slice(0, 2).map((ev) => {
               const { dd, mmShort, wdShort, time } = fmtUpcoming(ev.when);
               return (
