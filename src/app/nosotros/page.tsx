@@ -9,6 +9,12 @@ export const metadata: Metadata = {
   description: "Conoce nuestra visión, misión y liderazgo.",
 };
 
+// Build /gallery/01.jpeg ... /gallery/48.jpeg
+const GALLERY_SRCS = Array.from({ length: 48 }, (_, i) => {
+  const n = String(i + 1).padStart(2, "0");
+  return `/gallery/${n}.jpeg`;
+});
+
 export default function NosotrosPage() {
   return (
     <main className="bg-yellow-100 min-h-screen">
@@ -45,14 +51,13 @@ export default function NosotrosPage() {
       <div className="max-w-7xl mx-auto px-4 py-12 space-y-10">
         {/* Row 1: Box 1 (Video) — full width on its own row */}
         <section>
-          {/* Box 1: YouTube embed */}
+          {/* Box 1: YouTube embed (16:9) */}
           <article className="rounded-2xl border border-yellow-200 bg-white/60 overflow-hidden">
-            {/* Shorts are vertical, so use 9:16 on mobile; you can keep 16:9 on md+ if you want */}
-            <div className="relative w-full aspect-[9/16] md:aspect-[16/9]">
+            <div className="relative w-full aspect-[16/9]">
               <iframe
                 className="absolute inset-0 h-full w-full"
-                src="https://www.youtube-nocookie.com/embed/AUHs8f5d2iE?modestbranding=1&rel=0&playsinline=1"
-                title="MFLC Yonkers — 14 años en imágenes (Shorts)"
+                src="https://www.youtube-nocookie.com/embed/Z4g-T-bHypA?modestbranding=1&rel=0&playsinline=1"
+                title="MFLC Yonkers — Video"
                 loading="lazy"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 allowFullScreen
@@ -61,12 +66,12 @@ export default function NosotrosPage() {
             </div>
           </article>
         </section>
+
         {/* Row 2: Box 2 (Misión) + Box 3 (Visión) — wider side-by-side */}
         <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Box 2: Misión */}
           <article className="rounded-2xl border border-yellow-200 bg-white/60 p-6">
             <h2 className="text-2xl font-semibold">Misión</h2>
-
             <div className="mt-3 text-gray-700 space-y-4">
               <p>
                 El principal propósito de{" "}
@@ -79,7 +84,6 @@ export default function NosotrosPage() {
                 donde no se ha escuchado el maravilloso nombre de nuestro Señor
                 Jesucristo.
               </p>
-
               <p>
                 <strong>Ministerio Familiar La Cosecha</strong> y su pastor{" "}
                 <strong>Maynor Cerrato</strong> han recibido, por palabra
@@ -87,7 +91,6 @@ export default function NosotrosPage() {
                 del Señor (profetas, evangelistas y ministros del exterior), lo
                 siguiente:
               </p>
-
               <ol className="list-decimal pl-5 space-y-2">
                 <li>
                   Que Dios envió a nuestro pastor como portavoz y líder de
@@ -128,7 +131,6 @@ export default function NosotrosPage() {
           {/* Box 3: Visión */}
           <article className="rounded-2xl border border-yellow-200 bg-white/60 p-6">
             <h2 className="text-2xl font-semibold">Visión</h2>
-
             <div className="mt-3 text-gray-700 space-y-4">
               <p>
                 Tener una relación íntima con nuestro Señor Jesucristo a través
@@ -137,7 +139,6 @@ export default function NosotrosPage() {
                 en lealtad divina, moral y devocional al Padre, al Hijo y al
                 Espíritu Santo.
               </p>
-
               <p>
                 Anunciar las virtudes de Jesucristo patrocinando, orando y
                 enviando a los misioneros y pastores que anuncian la paz y las
@@ -145,7 +146,6 @@ export default function NosotrosPage() {
                 practicando y viviendo la compasión, la misericordia, la fe y el
                 amor.
               </p>
-
               <p>
                 Proclamar a Cristo Jesús, hacer discípulos y levantar líderes
                 para el Reino de Dios. Anunciar a Cristo Jesús como{" "}
@@ -153,7 +153,6 @@ export default function NosotrosPage() {
                 gente a una vida de relación con Él; por medio de la oración, el
                 ayuno, la vigilia y la enseñanza de la santa Palabra de Dios.
               </p>
-
               <p>
                 Ser luz y sal de la tierra, guiando, exhortando e instruyendo al
                 hombre en la santa doctrina de nuestro Señor Jesucristo —según
@@ -162,8 +161,6 @@ export default function NosotrosPage() {
                 Westchester, Putnam y las áreas alrededor, se propone lo
                 siguiente:
               </p>
-
-              {/* Lettered list A., B., C., ... */}
               <ol type="A" className="pl-6 space-y-2 list-inside">
                 <li>
                   A. Orar sin cesar por nuestra ciudad, comunidades y el mundo
@@ -188,6 +185,7 @@ export default function NosotrosPage() {
             </div>
           </article>
         </section>
+
         {/* ======= LEADERSHIP ======= */}
         {/* Row 3: Image (2 cols) + Bio (4 cols) pairs */}
         <section className="grid grid-cols-1 md:grid-cols-6 gap-6 items-start">
@@ -211,19 +209,19 @@ export default function NosotrosPage() {
             </h3>
             <p className="mt-2 text-gray-700">
               Nací en San Pedro Sula Honduras. Soy el segundo hijo de 4
-              hermanos. Desde la edad de 6 años le sirvo al señor. Emigre a los
+              hermanos. Desde la edad de 6 años le sirvo al Señor. Emigré a los
               Estados Unidos a la edad de 19 años.
             </p>
             <p className="mt-2 text-gray-700">
-              Al llegar al kindergarten conocí a la que el dia de hoy es mi
+              Al llegar al kindergarten conocí a la que el día de hoy es mi
               esposa, la Pastora Norma Cerrato, con la cual hemos procreado 2
-              hijos que le sirven al Señor Jesús, Laura y Samir Cerrato - mis
+              hijos que le sirven al Señor Jesús, Laura y Samir Cerrato — mis
               grandes tesoros en mi vida.
             </p>
             <p className="mt-2 text-gray-700">
-              Estudie una maestría en Conserjería Clinica Pastoral en la
+              Estudié una maestría en Consejería Clínica Pastoral en la
               universidad Revelation 3:20 en Miami, Florida. Soy Pastor del
-              Ministerio Familiar la Cosecha en Yonkers, NY.
+              Ministerio Familiar La Cosecha en Yonkers, NY.
             </p>
           </article>
 
@@ -258,18 +256,12 @@ export default function NosotrosPage() {
             </p>
           </article>
         </section>
+
         {/* Row 4: Box 8 (Gallery) */}
         <section>
           <h2 className="text-2xl font-semibold mb-4">Galería</h2>
           <div className="rounded-2xl border border-yellow-200 bg-white/60 p-0">
-            <GalleryCarousel
-              items={[
-                { caption: "Ejemplo: Bautismos – Agosto (placeholder)" },
-                { caption: "Ejemplo: Servicio de Adoración (placeholder)" },
-                { caption: "Ejemplo: Día de Comunidad (placeholder)" },
-              ]}
-              intervalMs={30000}
-            />
+            <GalleryCarousel items={GALLERY_SRCS} intervalMs={10000} />
           </div>
         </section>
       </div>

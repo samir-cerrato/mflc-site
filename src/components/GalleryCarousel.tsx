@@ -1,111 +1,236 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Image from "next/image";
+import * as React from "react";
 
-type Slide = {
-  /** Optional image path (e.g., "/galeria/01.jpg"). If omitted, a placeholder block is shown. */
-  src?: string;
-  /** Describe the image for accessibility */
-  alt?: string;
-  /** Caption shown over/under the image */
-  caption?: string;
-};
+type GalleryItem = string | { src: string; alt?: string };
 
 export default function GalleryCarousel({
   items,
-  intervalMs = 30000,
+  intervalMs = 20000, // 20s default
 }: {
-  items?: Slide[];
+  items: GalleryItem[];
   intervalMs?: number;
 }) {
-  const fallbackSlides: Slide[] = [
-    { caption: "Galería — imagen 1 (placeholder)" },
-    { caption: "Galería — imagen 2 (placeholder)" },
-    { caption: "Galería — imagen 3 (placeholder)" },
-  ];
+  // Stable, deterministic list
+  const normalized = React.useMemo(
+    () =>
+      items.map((it, idx) =>
+        typeof it === "string"
+          ? { src: it, alt: `Galería ${idx + 1}` }
+          : { alt: `Galería ${idx + 1}`, ...it }
+      ),
+    [items]
+  );
 
-  const slides = items && items.length > 0 ? items : fallbackSlides;
+  const [idx, setIdx] = React.useState(0);
+  const [open, setOpen] = React.useState(false);
 
-  const [index, setIndex] = useState(0);
+  // Direction-aware transitions
+  const prevIdxRef = React.useRef(0);
+  const direction = idx >= prevIdxRef.current ? 1 : -1;
+  React.useEffect(() => {
+    prevIdxRef.current = idx;
+  }, [idx]);
 
-  useEffect(() => {
+  // Auto-advance (pause in lightbox)
+  React.useEffect(() => {
+    if (normalized.length === 0 || open) return;
     const id = setInterval(() => {
-      setIndex((i) => (i + 1) % slides.length);
+      setIdx((i) => (i + 1 < normalized.length ? i + 1 : 0));
     }, intervalMs);
     return () => clearInterval(id);
-  }, [slides.length, intervalMs]);
+  }, [intervalMs, normalized.length, open]);
 
-  const go = (delta: number) =>
-    setIndex((i) => (i + delta + slides.length) % slides.length);
+  const current = normalized[idx] ?? normalized[0];
 
-  const current = slides[index];
+  function next() {
+    setIdx((i) => (i + 1 < normalized.length ? i + 1 : 0));
+  }
+  function prev() {
+    setIdx((i) => (i - 1 >= 0 ? i - 1 : normalized.length - 1));
+  }
+
+  // Keyboard in lightbox
+  React.useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "ArrowRight") {
+        e.preventDefault();
+        next();
+      } else if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        prev();
+      } else if (e.key === "Escape") {
+        e.preventDefault();
+        setOpen(false);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    const orig = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = orig;
+    };
+  }, [open]);
+
+  // Touch swipe in lightbox
+  const touchStartX = React.useRef<number | null>(null);
+  const touchDx = React.useRef(0);
+  const SWIPE = 48;
+  const onTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchDx.current = 0;
+  };
+  const onTouchMove = (e: React.TouchEvent) => {
+    if (touchStartX.current == null) return;
+    touchDx.current = e.touches[0].clientX - touchStartX.current;
+  };
+  const onTouchEnd = () => {
+    if (touchDx.current > SWIPE) prev();
+    else if (touchDx.current < -SWIPE) next();
+    touchStartX.current = null;
+    touchDx.current = 0;
+  };
+
+  // Slide/fade transition tokens
+  const slideBase =
+    "absolute inset-0 transition-all duration-500 ease-out will-change-transform will-change-opacity";
+  const enterFromTokens =
+    direction === 1
+      ? ["translate-x-6", "opacity-0"]
+      : ["-translate-x-6", "opacity-0"];
+  const enterToTokens = ["translate-x-0", "opacity-100"];
+
+  const onEnterTransition = (imgEl: HTMLImageElement | null | undefined) => {
+    if (!imgEl || !imgEl.parentElement) return;
+    const list = imgEl.parentElement.classList;
+    list.remove(...enterFromTokens);
+    list.add(...enterToTokens);
+  };
 
   return (
     <div className="relative w-full overflow-hidden rounded-2xl">
-      {/* Visual area */}
-      <div className="relative h-64 md:h-80 lg:h-96 bg-gray-200">
-        {current.src ? (
-          <Image
-            src={current.src}
-            alt={current.alt ?? ""}
-            fill
-            sizes="(min-width: 1024px) 1024px, 100vw"
-            className="object-cover"
-            priority={index === 0}
-          />
-        ) : (
-          // Placeholder block
+      {/* Panel viewport: show FULL image (object-contain) */}
+      <div className="relative w-full aspect-[16/9] md:aspect-[21/9] bg-black">
+        <button
+          type="button"
+          aria-label="Abrir imagen en pantalla completa"
+          className="absolute inset-0 h-full w-full"
+          onClick={() => setOpen(true)}
+        >
           <div
-            role="img"
-            aria-label={current.alt ?? "Imagen de galería (placeholder)"}
-            className="absolute inset-0 grid place-items-center bg-gradient-to-br from-yellow-100 to-yellow-300 text-black"
+            key={current.src}
+            className={`${slideBase} ${enterFromTokens.join(" ")}`}
           >
-            <span className="text-sm md:text-base italic">
-              (Placeholder de imagen)
-            </span>
-          </div>
-        )}
-
-        {/* Bottom gradient + caption */}
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 via-black/25 to-transparent p-4">
-          <p className="text-white text-sm md:text-base" aria-live="polite">
-            {current.caption ?? ""}
-          </p>
-        </div>
-
-        {/* Controls */}
-        <button
-          type="button"
-          onClick={() => go(-1)}
-          aria-label="Anterior"
-          className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-black/40 px-3 py-2 text-white hover:bg-black/60"
-        >
-          ‹
-        </button>
-        <button
-          type="button"
-          onClick={() => go(1)}
-          aria-label="Siguiente"
-          className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-black/40 px-3 py-2 text-white hover:bg-black/60"
-        >
-          ›
-        </button>
-
-        {/* Dots */}
-        <div className="absolute inset-x-0 bottom-2 flex justify-center gap-2">
-          {slides.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => setIndex(i)}
-              aria-label={`Ir a la imagen ${i + 1}`}
-              className={`h-2.5 w-2.5 rounded-full ${
-                i === index ? "bg-white" : "bg-white/50 hover:bg-white/80"
-              }`}
+            <Image
+              src={current.src}
+              alt={current.alt || "Galería"}
+              fill
+              sizes="100vw"
+              className="object-contain" // << full image in panel
+              onLoadingComplete={(img) => {
+                requestAnimationFrame(() => onEnterTransition(img));
+              }}
             />
-          ))}
-        </div>
+          </div>
+        </button>
       </div>
+
+      {/* LIGHTBOX */}
+      {open && (
+        <div
+          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Galería en pantalla completa"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setOpen(false);
+          }}
+        >
+          {/* Prev */}
+          <button
+            type="button"
+            onClick={prev}
+            aria-label="Imagen anterior"
+            className="absolute left-3 md:left-6 top-1/2 -translate-y-1/2 rounded-full bg-white/15 hover:bg-white/25 p-3"
+          >
+            <svg
+              width="28"
+              height="28"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="white"
+              strokeWidth="2"
+            >
+              <path d="M15 18l-6-6 6-6" />
+            </svg>
+          </button>
+
+          {/* Next */}
+          <button
+            type="button"
+            onClick={next}
+            aria-label="Imagen siguiente"
+            className="absolute right-3 md:right-6 top-1/2 -translate-y-1/2 rounded-full bg-white/15 hover:bg-white/25 p-3"
+          >
+            <svg
+              width="28"
+              height="28"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="white"
+              strokeWidth="2"
+            >
+              <path d="M9 18l6-6-6-6" />
+            </svg>
+          </button>
+
+          {/* Close */}
+          <button
+            type="button"
+            onClick={() => setOpen(false)}
+            aria-label="Cerrar"
+            className="absolute top-3 right-3 md:top-6 md:right-6 rounded-full bg-white/15 hover:bg-white/25 p-3"
+          >
+            <svg
+              width="28"
+              height="28"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="white"
+              strokeWidth="2"
+            >
+              <path d="M18 6L6 18M6 6l12 12" />
+            </svg>
+          </button>
+
+          {/* Image area (full image) with swipe */}
+          <div
+            className="relative w-[92vw] h-[86vh] select-none"
+            onTouchStart={onTouchStart}
+            onTouchMove={onTouchMove}
+            onTouchEnd={onTouchEnd}
+          >
+            <div
+              key={current.src}
+              className={`${slideBase} ${enterFromTokens.join(" ")}`}
+            >
+              <Image
+                src={current.src}
+                alt={current.alt || "Galería"}
+                fill
+                sizes="100vw"
+                className="object-contain"
+                onLoadingComplete={(img) => {
+                  requestAnimationFrame(() => onEnterTransition(img));
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
