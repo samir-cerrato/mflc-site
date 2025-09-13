@@ -433,6 +433,7 @@ export default function InfoPanel() {
               fill
               className="object-cover blur-2xl scale-110 opacity-40 pointer-events-none"
               aria-hidden
+              sizes="(max-width: 767px) 100vw, 50vw" // 👈 add this
             />
             {/* Foreground poster with fixed ratio */}+{" "}
             <div className="relative z-10 w-full aspect-[4/5]">
@@ -441,6 +442,7 @@ export default function InfoPanel() {
                 alt="Afiche del evento"
                 fill
                 className="object-contain"
+                sizes="(max-width: 767px) 100vw, 50vw" // 👈 add this
               />
             </div>
             {hasMany && (
@@ -748,7 +750,13 @@ export default function InfoPanel() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="relative w-full h-full">
-              <Image src={img} alt="Evento" fill className="object-contain" />
+              <Image
+                src={img}
+                alt="Evento"
+                fill
+                className="object-contain"
+                sizes="100vw" // 👈 add this
+              />
             </div>
           </div>
         </div>

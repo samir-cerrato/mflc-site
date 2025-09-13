@@ -21,21 +21,21 @@ export default function NosotrosPage() {
       {/* HERO BANNER (full width under navbar) */}
       <section className="relative w-full">
         <div className="relative h-[280px] sm:h-[340px] md:h-[420px] lg:h-[520px] xl:h-[580px] overflow-hidden">
-          {/* Mobile image */}
+          {/* Mobile image (only on < md) */}
           <Image
             src="/about-us-mobile.png"
             alt="Imagen de cabecera (móvil)"
             fill
-            sizes="100vw"
+            sizes="(max-width: 767px) 100vw, 0px" // visible only on mobile
             className="object-cover object-center block md:hidden"
             priority
           />
-          {/* Desktop/tablet image */}
+          {/* Desktop/tablet image (md and up) */}
           <Image
             src="/about-us.jpg"
             alt="Imagen de cabecera (desktop)"
             fill
-            sizes="100vw"
+            sizes="(max-width: 767px) 0px, 100vw" // hidden on mobile, full width on md+
             className="object-cover md:object-[42%_92%] hidden md:block"
           />
           {/* Overlay + title */}
@@ -261,7 +261,13 @@ export default function NosotrosPage() {
         <section>
           <h2 className="text-2xl font-semibold mb-4">Galería</h2>
           <div className="rounded-2xl border border-yellow-200 bg-white/60 p-0">
-            <GalleryCarousel items={GALLERY_SRCS} intervalMs={10000} />
+            <GalleryCarousel
+              items={Array.from({ length: 48 }, (_, i) => ({
+                src: `/gallery/${String(i + 1).padStart(2, "0")}.jpeg`,
+                alt: `Galería ${i + 1}`,
+              }))}
+              intervalMs={20000}
+            />
           </div>
         </section>
       </div>

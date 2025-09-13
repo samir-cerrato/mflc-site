@@ -1,233 +1,171 @@
+// src/components/GalleryCarousel.tsx
 "use client";
 
 import Image from "next/image";
-import * as React from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { ChevronLeft, ChevronRight, Maximize2, X } from "lucide-react";
 
-type GalleryItem = string | { src: string; alt?: string };
+type GalleryItem = { src: string; alt?: string };
 
 export default function GalleryCarousel({
   items,
-  intervalMs = 20000, // 20s default
+  intervalMs = 20000, // auto-advance every 20s
 }: {
   items: GalleryItem[];
   intervalMs?: number;
 }) {
-  // Stable, deterministic list
-  const normalized = React.useMemo(
-    () =>
-      items.map((it, idx) =>
-        typeof it === "string"
-          ? { src: it, alt: `Galería ${idx + 1}` }
-          : { alt: `Galería ${idx + 1}`, ...it }
-      ),
-    [items]
+  const [index, setIndex] = useState(0);
+  const [loaded, setLoaded] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+  const timerRef = useRef<number | null>(null);
+
+  const next = useCallback(
+    () => setIndex((i) => (i + 1) % items.length),
+    [items.length]
+  );
+  const prev = useCallback(
+    () => setIndex((i) => (i - 1 + items.length) % items.length),
+    [items.length]
   );
 
-  const [idx, setIdx] = React.useState(0);
-  const [open, setOpen] = React.useState(false);
+  // Auto-advance (paused while lightbox is open or if only one image)
+  useEffect(() => {
+    if (isOpen || items.length <= 1) return;
+    if (timerRef.current) window.clearInterval(timerRef.current);
+    timerRef.current = window.setInterval(next, Math.max(1000, intervalMs));
+    return () => {
+      if (timerRef.current) window.clearInterval(timerRef.current);
+    };
+  }, [next, intervalMs, isOpen, items.length]);
 
-  // Direction-aware transitions
-  const prevIdxRef = React.useRef(0);
-  const direction = idx >= prevIdxRef.current ? 1 : -1;
-  React.useEffect(() => {
-    prevIdxRef.current = idx;
-  }, [idx]);
-
-  // Auto-advance (pause in lightbox)
-  React.useEffect(() => {
-    if (normalized.length === 0 || open) return;
-    const id = setInterval(() => {
-      setIdx((i) => (i + 1 < normalized.length ? i + 1 : 0));
-    }, intervalMs);
-    return () => clearInterval(id);
-  }, [intervalMs, normalized.length, open]);
-
-  const current = normalized[idx] ?? normalized[0];
-
-  function next() {
-    setIdx((i) => (i + 1 < normalized.length ? i + 1 : 0));
-  }
-  function prev() {
-    setIdx((i) => (i - 1 >= 0 ? i - 1 : normalized.length - 1));
-  }
-
-  // Keyboard in lightbox
-  React.useEffect(() => {
-    if (!open) return;
+  // Keyboard: ←/→ navigate; Esc closes lightbox
+  useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "ArrowRight") {
-        e.preventDefault();
-        next();
-      } else if (e.key === "ArrowLeft") {
-        e.preventDefault();
-        prev();
-      } else if (e.key === "Escape") {
-        e.preventDefault();
-        setOpen(false);
-      }
+      if (e.key === "ArrowRight") next();
+      else if (e.key === "ArrowLeft") prev();
+      else if (e.key === "Escape" && isOpen) setIsOpen(false);
     };
     window.addEventListener("keydown", onKey);
-    const orig = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = orig;
-    };
-  }, [open]);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [next, prev, isOpen]);
 
-  // Touch swipe in lightbox
-  const touchStartX = React.useRef<number | null>(null);
-  const touchDx = React.useRef(0);
-  const SWIPE = 48;
-  const onTouchStart = (e: React.TouchEvent) => {
-    touchStartX.current = e.touches[0].clientX;
-    touchDx.current = 0;
-  };
-  const onTouchMove = (e: React.TouchEvent) => {
-    if (touchStartX.current == null) return;
-    touchDx.current = e.touches[0].clientX - touchStartX.current;
-  };
-  const onTouchEnd = () => {
-    if (touchDx.current > SWIPE) prev();
-    else if (touchDx.current < -SWIPE) next();
-    touchStartX.current = null;
-    touchDx.current = 0;
-  };
+  // Fade transition control
+  useEffect(() => setLoaded(false), [index]);
 
-  // Slide/fade transition tokens
-  const slideBase =
-    "absolute inset-0 transition-all duration-500 ease-out will-change-transform will-change-opacity";
-  const enterFromTokens =
-    direction === 1
-      ? ["translate-x-6", "opacity-0"]
-      : ["-translate-x-6", "opacity-0"];
-  const enterToTokens = ["translate-x-0", "opacity-100"];
-
-  const onEnterTransition = (imgEl: HTMLImageElement | null | undefined) => {
-    if (!imgEl || !imgEl.parentElement) return;
-    const list = imgEl.parentElement.classList;
-    list.remove(...enterFromTokens);
-    list.add(...enterToTokens);
-  };
+  const current = items[index];
 
   return (
-    <div className="relative w-full overflow-hidden rounded-2xl">
-      {/* Panel viewport: show FULL image (object-contain) */}
-      <div className="relative w-full aspect-[16/9] md:aspect-[21/9] bg-black">
+    <div className="relative w-full">
+      {/* PANEL VIEW */}
+      <div className="relative w-full aspect-[16/9] md:aspect-[21/9] overflow-hidden rounded-2xl bg-black">
+        <Image
+          key={current.src}
+          src={current.src}
+          alt={current.alt ?? `Galería ${index + 1}`}
+          fill
+          sizes="100vw"
+          className={`object-contain transition-opacity duration-500 ${
+            loaded ? "opacity-100" : "opacity-0"
+          }`}
+          // ⬇️ Next 15: use onLoad (onLoadingComplete is deprecated)
+          onLoad={() => setLoaded(true)}
+          priority={false}
+        />
+
+        {/* Open fullscreen */}
         <button
           type="button"
-          aria-label="Abrir imagen en pantalla completa"
-          className="absolute inset-0 h-full w-full"
-          onClick={() => setOpen(true)}
+          onClick={() => setIsOpen(true)}
+          aria-label="Abrir imagen a pantalla completa"
+          className="absolute right-3 top-3 rounded-full bg-black/50 p-2 text-white hover:bg-black/70"
         >
-          <div
-            key={current.src}
-            className={`${slideBase} ${enterFromTokens.join(" ")}`}
-          >
-            <Image
-              src={current.src}
-              alt={current.alt || "Galería"}
-              fill
-              sizes="100vw"
-              className="object-contain" // << full image in panel
-              onLoadingComplete={(img) => {
-                requestAnimationFrame(() => onEnterTransition(img));
-              }}
-            />
-          </div>
+          <Maximize2 className="h-5 w-5" />
         </button>
+
+        {/* Panel arrows */}
+        {items.length > 1 && (
+          <>
+            <button
+              type="button"
+              aria-label="Anterior"
+              onClick={prev}
+              className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-2 text-white hover:bg-black/70"
+            >
+              <ChevronLeft className="h-6 w-6" />
+            </button>
+            <button
+              type="button"
+              aria-label="Siguiente"
+              onClick={next}
+              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-2 text-white hover:bg-black/70"
+            >
+              <ChevronRight className="h-6 w-6" />
+            </button>
+          </>
+        )}
       </div>
 
-      {/* LIGHTBOX */}
-      {open && (
+      {/* FULLSCREEN LIGHTBOX */}
+      {isOpen && (
         <div
-          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center"
+          className="fixed inset-0 z-[60] bg-black/90"
           role="dialog"
           aria-modal="true"
-          aria-label="Galería en pantalla completa"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setOpen(false);
-          }}
+          onClick={() => setIsOpen(false)}
         >
-          {/* Prev */}
-          <button
-            type="button"
-            onClick={prev}
-            aria-label="Imagen anterior"
-            className="absolute left-3 md:left-6 top-1/2 -translate-y-1/2 rounded-full bg-white/15 hover:bg-white/25 p-3"
-          >
-            <svg
-              width="28"
-              height="28"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="white"
-              strokeWidth="2"
-            >
-              <path d="M15 18l-6-6 6-6" />
-            </svg>
-          </button>
-
-          {/* Next */}
-          <button
-            type="button"
-            onClick={next}
-            aria-label="Imagen siguiente"
-            className="absolute right-3 md:right-6 top-1/2 -translate-y-1/2 rounded-full bg-white/15 hover:bg-white/25 p-3"
-          >
-            <svg
-              width="28"
-              height="28"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="white"
-              strokeWidth="2"
-            >
-              <path d="M9 18l6-6-6-6" />
-            </svg>
-          </button>
-
           {/* Close */}
           <button
             type="button"
-            onClick={() => setOpen(false)}
             aria-label="Cerrar"
-            className="absolute top-3 right-3 md:top-6 md:right-6 rounded-full bg-white/15 hover:bg-white/25 p-3"
+            onClick={() => setIsOpen(false)}
+            className="absolute right-4 top-4 rounded-full bg-white/20 p-2 text-white hover:bg-white/30"
           >
-            <svg
-              width="28"
-              height="28"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="white"
-              strokeWidth="2"
-            >
-              <path d="M18 6L6 18M6 6l12 12" />
-            </svg>
+            <X className="h-6 w-6" />
           </button>
 
-          {/* Image area (full image) with swipe */}
-          <div
-            className="relative w-[92vw] h-[86vh] select-none"
-            onTouchStart={onTouchStart}
-            onTouchMove={onTouchMove}
-            onTouchEnd={onTouchEnd}
-          >
-            <div
-              key={current.src}
-              className={`${slideBase} ${enterFromTokens.join(" ")}`}
-            >
+          {/* Lightbox image */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="relative h-[90vh] w-[94vw]">
               <Image
+                key={`full-${current.src}`}
                 src={current.src}
-                alt={current.alt || "Galería"}
+                alt={current.alt ?? `Galería ${index + 1}`}
                 fill
                 sizes="100vw"
-                className="object-contain"
-                onLoadingComplete={(img) => {
-                  requestAnimationFrame(() => onEnterTransition(img));
-                }}
+                className={`object-contain transition-opacity duration-300 ${
+                  loaded ? "opacity-100" : "opacity-0"
+                }`}
+                onLoad={() => setLoaded(true)}
               />
             </div>
+
+            {/* Lightbox arrows */}
+            {items.length > 1 && (
+              <>
+                <button
+                  type="button"
+                  aria-label="Anterior"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    prev();
+                  }}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full bg-white/20 p-3 text-white hover:bg-white/30"
+                >
+                  <ChevronLeft className="h-7 w-7" />
+                </button>
+                <button
+                  type="button"
+                  aria-label="Siguiente"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    next();
+                  }}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full bg-white/20 p-3 text-white hover:bg-white/30"
+                >
+                  <ChevronRight className="h-7 w-7" />
+                </button>
+              </>
+            )}
           </div>
         </div>
       )}
