@@ -14,7 +14,9 @@ export const metadata: Metadata = {
 const FACEBOOK_PAGE = "https://www.facebook.com/ministeriofamiliarlacosecha";
 const INSTAGRAM_PROFILE = "https://www.instagram.com/lacosechayonkers";
 const YOUTUBE_CHANNEL = "https://www.youtube.com/@MFLCYONKERS";
-const YT_LATEST_VIDEO_ID = "Z4g-T-bHypA";
+
+// ✅ Your playlist ID (from your link)
+const YT_PLAYLIST_ID = "PL8_QTjnlpEFEkJ4Kmh_rqbJ3oJkJDlt8C";
 
 export default function RedesPage() {
   return (
@@ -71,12 +73,9 @@ export default function RedesPage() {
 
             {/* Content */}
             <div className="px-4 md:px-6 pb-6">
-              {/* Centered, responsive max-widths; rounded clip; no baseline gap */}
               <div className="mx-auto w-full max-w-[340px] sm:max-w-[480px] md:max-w-[560px] rounded-2xl overflow-hidden leading-none">
                 <iframe
                   title="Facebook Page Plugin"
-                  // Use a smaller height on mobile so you don't get a big empty bottom area.
-                  // (The plugin doesn’t support CSS media queries for height, so we pick a good compromise.)
                   src={`https://www.facebook.com/plugins/page.php?href=${encodeURIComponent(
                     FACEBOOK_PAGE
                   )}&tabs=timeline&width=500&height=560&small_header=true&adapt_container_width=true&hide_cover=true&show_facepile=false`}
@@ -96,7 +95,7 @@ export default function RedesPage() {
             </div>
           </article>
 
-          {/* YouTube (unchanged) */}
+          {/* YouTube (playlist that auto-updates) */}
           <article className="rounded-3xl border border-yellow-400 bg-white p-6 shadow">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-2xl font-semibold">YouTube</h2>
@@ -110,26 +109,31 @@ export default function RedesPage() {
                   Suscribirse
                 </Link>
                 <Link
-                  href={YOUTUBE_CHANNEL}
+                  href={`https://www.youtube.com/playlist?list=${YT_PLAYLIST_ID}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 underline"
                 >
-                  Abrir canal <ExternalLink className="h-4 w-4" />
+                  Abrir playlist <ExternalLink className="h-4 w-4" />
                 </Link>
               </div>
             </div>
+
             <div className="relative w-full aspect-[16/9] rounded-2xl overflow-hidden bg-black">
               <iframe
                 className="absolute inset-0 h-full w-full"
-                src={`https://www.youtube-nocookie.com/embed/${YT_LATEST_VIDEO_ID}?modestbranding=1&rel=0&playsinline=1`}
-                title="YouTube"
+                src={`https://www.youtube-nocookie.com/embed/videoseries?list=${YT_PLAYLIST_ID}&index=0&modestbranding=1&rel=0&playsinline=1`}
+                title="YouTube - Últimos sermones (playlist)"
                 loading="lazy"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 allowFullScreen
                 referrerPolicy="no-referrer-when-downgrade"
               />
             </div>
+
+            <p className="mt-3 text-sm text-neutral-600">
+              Se muestra automáticamente el video más reciente de la lista.
+            </p>
           </article>
         </section>
 
@@ -150,7 +154,6 @@ export default function RedesPage() {
 
           {/* Content */}
           <div className="px-4 md:px-6 pb-6">
-            {/* Centered, responsive max-widths; rounded clip; no baseline gap */}
             <div className="mx-auto w-full max-w-[360px] sm:max-w-[700px] md:max-w-[900px] rounded-2xl overflow-hidden leading-none">
               <Script
                 src="https://cdn.lightwidget.com/widgets/lightwidget.js"
