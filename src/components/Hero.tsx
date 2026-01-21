@@ -16,7 +16,7 @@ export default function Hero() {
     <section className="relative w-full max-w-[100vw] h-[100svh] bg-yellow-50 overflow-hidden">
       {/* Mobile image (no crop, can stretch) */}
       <Image
-        src="/thumbnail_with_bgc.png"
+        src="/thumbnail2026_with_bgc.png"
         alt="Fondo del héroe (móvil)"
         fill
         priority
@@ -26,7 +26,7 @@ export default function Hero() {
 
       {/* Desktop image (no crop, can stretch) */}
       <Image
-        src="/thumbnail.png"
+        src="/thumbnail2026.png"
         alt="Fondo del héroe (escritorio)"
         fill
         priority
@@ -83,7 +83,7 @@ export default function Hero() {
           {/* Textbox (semi-transparent, blurred) */}
           <div
             className="w-[min(42ch,36vw)] rounded-2xl border border-yellow-600/30
-                          bg-white/45 backdrop-blur-md p-6 shadow-xl text-black"
+                          bg-white/40 backdrop-blur-sm p-6 shadow-xl text-black"
           >
             <h1 className="text-4xl lg:text-5xl font-extrabold tracking-tight text-center">
               Bienvenidos a La Cosecha

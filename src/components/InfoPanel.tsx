@@ -20,8 +20,8 @@ import { Panel, PanelBody } from "@/components/Panel";
    (Keep extras commented-out; arrows/autoplay appear if >1)
 ====================================================================== */
 const EVENTS = [
-  "/anniversary_invite.jpg",
-  // "/image21.jpeg",
+  "/ayuno.png",
+  "/primicias.png",
   // "/image22.jpeg",
 ];
 
@@ -45,17 +45,41 @@ type FeaturedMeta = {
 
 const FEATURED_META: FeaturedMeta[] = [
   {
-    title: "14º Aniversario",
+    title: "Ayuno (Enero 1–31)",
     address: "191 North Broadway, Yonkers, NY 10701",
     mapsQuery: "191 North Broadway, Yonkers, NY 10701",
     description:
-      "Celebra con nosotros el aniversario de nuestro ministerio con alabanza, palabra y compañerismo. ¡Todos son bienvenidos!",
+      "Acompáñanos en nuestro ayuno congregacional durante el mes de enero. Unidos en oración, consagración y búsqueda de Dios.",
     occurrences: [
-      { title: "Aniversario (Día 1)", date: "09/12/2025", time: "7:30 PM" },
-      { title: "Aniversario (Día 2)", date: "09/13/2025", time: "7:00 PM" },
-      { title: "Aniversario (Día 3)", date: "09/14/2025", time: "2:30 PM" },
+      { title: "Inicio del Ayuno", date: "01/01/2026", time: "12:00 AM" },
+      { title: "Fin del Ayuno", date: "01/31/2026", time: "11:59 PM" },
     ],
   },
+  {
+    title: "Primicias",
+    address: "191 North Broadway, Yonkers, NY 10701",
+    mapsQuery: "191 North Broadway, Yonkers, NY 10701",
+    description:
+      "Servicio especial de Primicias. Ven y adoremos juntos, presentando a Dios lo primero y lo mejor, creyendo por un año de bendición y crecimiento espiritual.",
+    occurrences: [
+      { title: "Servicio de Primicias", date: "01/31/2026", time: "7:00 PM" },
+    ],
+  },
+  /* ==================================================================
+     ✅ TEMPLATE: Add another announcement like this
+     1) Add the image path in EVENTS (same position/order)
+     2) Add matching meta here (same position/order)
+  ================================================================== */
+  // {
+  //   title: "Nombre del Evento",
+  //   address: "191 North Broadway, Yonkers, NY 10701",
+  //   mapsQuery: "191 North Broadway, Yonkers, NY 10701",
+  //   description: "Descripción corta del anuncio.",
+  //   occurrences: [
+  //     { title: "Día 1", date: "02/14/2026", time: "7:30 PM" },
+  //     // { title: "Día 2", date: "02/15/2026", time: "2:30 PM" },
+  //   ],
+  // },
 ];
 
 /* ======================================================================
@@ -142,6 +166,32 @@ function formatTime12h(date: Date) {
   const mm = String(date.getMinutes()).padStart(2, "0");
   const ampm = h24 >= 12 ? "pm" : "am";
   return `${h12}:${mm}${ampm}`;
+}
+
+/* ======================================================================
+   DISPLAY: month-range formatter (UI only; calendar stays the same)
+====================================================================== */
+function isFullMonthRange(meta: FeaturedMeta) {
+  if (meta.occurrences.length !== 2) return false;
+
+  const [start, end] = meta.occurrences;
+  const s = parseMDY(start.date);
+  const e = parseMDY(end.date);
+
+  return (
+    start.title.toLowerCase().includes("inicio") &&
+    end.title.toLowerCase().includes("fin") &&
+    s.m === e.m &&
+    s.d === 1 &&
+    e.d >= 28
+  );
+}
+
+function formatMonthRangeES(meta: FeaturedMeta) {
+  const s = parseMDY(meta.occurrences[0].date);
+  const e = parseMDY(meta.occurrences[1].date);
+  const month = MONTHS_ES[s.m - 1];
+  return `${month} ${s.d} – ${e.d}`;
 }
 
 /* ======================================================================
@@ -362,11 +412,20 @@ export default function InfoPanel() {
   const [i, setI] = useState(0);
   const [open, setOpen] = useState(false);
 
-  const hasMany = EVENTS.length > 1;
-  const img = EVENTS[i] ?? "/placeholder.png";
-  const meta = FEATURED_META[i] ?? FEATURED_META[0];
+  // ✅ Single source of truth for slide count (prevents mismatch bugs)
+  const total = Math.min(EVENTS.length, FEATURED_META.length);
+  const hasMany = total > 1;
 
-  const onNext = useCallback(() => setI((n) => (n + 1) % EVENTS.length), []);
+  const safeIndex = total === 0 ? 0 : i % total;
+
+  const img = EVENTS[safeIndex] ?? "/placeholder.png";
+  const meta = FEATURED_META[safeIndex] ?? FEATURED_META[0];
+
+  const onNext = useCallback(() => {
+    if (total <= 1) return;
+    setI((n) => (n + 1) % total);
+  }, [total]);
+
   useEffect(() => {
     if (!hasMany || open) return;
     const id = setInterval(onNext, 20000);
@@ -377,13 +436,12 @@ export default function InfoPanel() {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") setOpen(false);
-      if (e.key === "ArrowLeft")
-        setI((n) => (n - 1 + EVENTS.length) % EVENTS.length);
-      if (e.key === "ArrowRight") setI((n) => (n + 1) % EVENTS.length);
+      if (e.key === "ArrowLeft") setI((n) => (n - 1 + total) % total);
+      if (e.key === "ArrowRight") setI((n) => (n + 1) % total);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open]);
+  }, [open, total]);
 
   const [baseUrl, setBaseUrl] = useState("");
   useEffect(() => setBaseUrl(window.location.origin), []);
@@ -433,18 +491,20 @@ export default function InfoPanel() {
               fill
               className="object-cover blur-2xl scale-110 opacity-40 pointer-events-none"
               aria-hidden
-              sizes="(max-width: 767px) 100vw, 50vw" // 👈 add this
+              sizes="(max-width: 767px) 100vw, 50vw"
             />
-            {/* Foreground poster with fixed ratio */}+{" "}
+
+            {/* Foreground poster with fixed ratio */}
             <div className="relative z-10 w-full aspect-[4/5]">
               <Image
                 src={img}
                 alt="Afiche del evento"
                 fill
                 className="object-contain"
-                sizes="(max-width: 767px) 100vw, 50vw" // 👈 add this
+                sizes="(max-width: 767px) 100vw, 50vw"
               />
             </div>
+
             {hasMany && (
               <>
                 <button
@@ -452,7 +512,7 @@ export default function InfoPanel() {
                   aria-label="Anterior"
                   onClick={(e) => {
                     e.stopPropagation();
-                    setI((n) => (n - 1 + EVENTS.length) % EVENTS.length);
+                    setI((n) => (n - 1 + total) % total);
                   }}
                   onMouseDown={(e) => e.stopPropagation()}
                   className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-white/90 p-2 text-black shadow hover:bg-white z-30"
@@ -464,7 +524,7 @@ export default function InfoPanel() {
                   aria-label="Siguiente"
                   onClick={(e) => {
                     e.stopPropagation();
-                    setI((n) => (n + 1) % EVENTS.length);
+                    setI((n) => (n + 1) % total);
                   }}
                   onMouseDown={(e) => e.stopPropagation()}
                   className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-white/90 p-2 text-black shadow hover:bg-white z-30"
@@ -489,6 +549,7 @@ export default function InfoPanel() {
                     {meta.occurrences.length} fecha(s) programada(s)
                   </span>
                 </li>
+
                 <li className="flex items-start gap-3">
                   <MapPin className="h-6 w-6 mt-0.5" />
                   <span className="leading-tight">
@@ -504,19 +565,27 @@ export default function InfoPanel() {
                     </Link>
                   </span>
                 </li>
+
+                {/* ✅ Dates/times: show Ayuno as a range; otherwise show list */}
                 <li className="flex items-start gap-3">
                   <Clock className="h-6 w-6 mt-0.5" />
                   <span className="leading-tight">
-                    {meta.occurrences.map((o, idx) => {
-                      const { y, m, d } = parseMDY(o.date);
-                      const wd = WEEKDAY_ES_SHORT[weekdayIndex(y, m, d)];
-                      const month = MONTHS_ES[m - 1];
-                      return (
-                        <span key={idx} className="block">
-                          {o.title}: {wd}, {pad(d)} de {month} — {o.time}
-                        </span>
-                      );
-                    })}
+                    {isFullMonthRange(meta) ? (
+                      <span className="block font-semibold">
+                        {meta.title}: {formatMonthRangeES(meta)}
+                      </span>
+                    ) : (
+                      meta.occurrences.map((o, idx) => {
+                        const { y, m, d } = parseMDY(o.date);
+                        const wd = WEEKDAY_ES_SHORT[weekdayIndex(y, m, d)];
+                        const month = MONTHS_ES[m - 1];
+                        return (
+                          <span key={idx} className="block">
+                            {o.title}: {wd}, {pad(d)} de {month} — {o.time}
+                          </span>
+                        );
+                      })
+                    )}
                   </span>
                 </li>
               </ul>
@@ -547,9 +616,9 @@ export default function InfoPanel() {
                 <p className="text-sm text-neutral-900 text-center md:text-left">
                   Comparte ahora
                 </p>
+
                 {shareUrl ? (
                   <div className="mt-2 flex items-center justify-center md:justify-start gap-4">
-                    {/* social icons unchanged */}
                     <a
                       href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
                         shareUrl
@@ -566,6 +635,7 @@ export default function InfoPanel() {
                         height={22}
                       />
                     </a>
+
                     <button
                       onClick={() =>
                         alert(
@@ -582,6 +652,7 @@ export default function InfoPanel() {
                         height={22}
                       />
                     </button>
+
                     <a
                       href={`https://wa.me/?text=${encodeURIComponent(
                         `Te comparto esta invitación: ${shareUrl}`
@@ -598,6 +669,7 @@ export default function InfoPanel() {
                         height={22}
                       />
                     </a>
+
                     <a
                       href={`mailto:?subject=${encodeURIComponent(
                         "Invitación a nuestro evento"
@@ -614,6 +686,7 @@ export default function InfoPanel() {
                         height={22}
                       />
                     </a>
+
                     <button
                       onClick={async () => {
                         if (!shareUrl) return;
@@ -640,6 +713,7 @@ export default function InfoPanel() {
                         height={22}
                       />
                     </button>
+
                     <button
                       onClick={() =>
                         downloadImage(
@@ -718,14 +792,14 @@ export default function InfoPanel() {
             <Close className="h-6 w-6" />
           </button>
 
-          {EVENTS.length > 1 && (
+          {hasMany && (
             <>
               <button
                 type="button"
                 aria-label="Anterior"
                 onClick={(e) => {
                   e.stopPropagation();
-                  setI((n) => (n - 1 + EVENTS.length) % EVENTS.length);
+                  setI((n) => (n - 1 + total) % total);
                 }}
                 className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full bg-white/90 p-2 text-black shadow hover:bg-white z-50"
               >
@@ -736,7 +810,7 @@ export default function InfoPanel() {
                 aria-label="Siguiente"
                 onClick={(e) => {
                   e.stopPropagation();
-                  setI((n) => (n + 1) % EVENTS.length);
+                  setI((n) => (n + 1) % total);
                 }}
                 className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full bg-white/90 p-2 text-black shadow hover:bg-white z-50"
               >
@@ -755,7 +829,7 @@ export default function InfoPanel() {
                 alt="Evento"
                 fill
                 className="object-contain"
-                sizes="100vw" // 👈 add this
+                sizes="100vw"
               />
             </div>
           </div>
