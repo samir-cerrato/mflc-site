@@ -20,8 +20,8 @@ import { Panel, PanelBody } from "@/components/Panel";
    (Keep extras commented-out; arrows/autoplay appear if >1)
 ====================================================================== */
 const EVENTS = [
-  "/ayuno.png",
-  "/primicias.png",
+  "/anniversary_15.png",
+  //"/primicias.png",
   // "/image22.jpeg",
 ];
 
@@ -45,17 +45,18 @@ type FeaturedMeta = {
 
 const FEATURED_META: FeaturedMeta[] = [
   {
-    title: "Ayuno (Enero 1–31)",
+    title: "15.º Aniversario",
     address: "191 North Broadway, Yonkers, NY 10701",
     mapsQuery: "191 North Broadway, Yonkers, NY 10701",
     description:
-      "Acompáñanos en nuestro ayuno congregacional durante el mes de enero. Unidos en oración, consagración y búsqueda de Dios.",
+      "Acompáñanos a celebrar nuestro 15º aniversario y juntos demos gracias a Dios por Su fidelidad y por todo lo que ha hecho a través de los años.",
     occurrences: [
-      { title: "Inicio del Ayuno", date: "01/01/2026", time: "12:00 AM" },
-      { title: "Fin del Ayuno", date: "01/31/2026", time: "11:59 PM" },
+      { title: "Día 1 del Aniversario", date: "09/11/2026", time: "7:30 PM" },
+      { title: "Día 2 del Aniversario", date: "09/12/2026", time: "7:00 PM" },
+      { title: "Día 3 del Aniversario", date: "09/13/2026", time: "2:30 PM" },
     ],
   },
-  {
+  /* {
     title: "Primicias",
     address: "191 North Broadway, Yonkers, NY 10701",
     mapsQuery: "191 North Broadway, Yonkers, NY 10701",
@@ -64,7 +65,7 @@ const FEATURED_META: FeaturedMeta[] = [
     occurrences: [
       { title: "Servicio de Primicias", date: "01/31/2026", time: "7:00 PM" },
     ],
-  },
+  }, */
   /* ==================================================================
      ✅ TEMPLATE: Add another announcement like this
      1) Add the image path in EVENTS (same position/order)
